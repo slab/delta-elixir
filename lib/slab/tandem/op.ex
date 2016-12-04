@@ -39,58 +39,30 @@ defmodule Slab.Tandem.Op do
   defp compose_atomic(%{ :retain => _ }, b = %{ :delete => _ }), do: b
   defp compose_atomic(_, _), do: false
 
-  def merge(%{ :delete => left }, %{ :delete => right }) do
-    delete(left + right)
-  end
-
-  def merge(op1 = %{ :insert => left }, op2 = %{ :insert => right }) when is_bitstring(left) and is_bitstring(right) do
-    cond do
-      is_nil(op1[:attributes]) and is_nil(op2[:attributes]) ->
-        insert(left <> right)
-      op1[:attributes] == op2[:attributes] ->
-        insert(left <> right, op1[:attributes])
-      true ->
-        false
-    end
-  end
-
-  def merge(op1 = %{ :retain => left }, op2 = %{ :retain => right }) do
-    cond do
-      is_nil(op1[:attributes]) and is_nil(op2[:attributes]) ->
-        retain(left + right)
-      op1[:attributes] == op2[:attributes] ->
-        retain(left + right, op1[:attributes])
-      true ->
-        false
-    end
-  end
-
-  def merge(_, _), do: false
-
   defp take(op = %{ :insert => text }, length) when is_bitstring(text) do
     case String.length(text) - length do
-      0 -> { op, [] }
+      0 -> { op, false }
       _ ->
         { left, right } = String.split_at(text, length)
-        { insert(left, op[:attributes]), [ insert(right, op[:attributes]) ]}
+        { insert(left, op[:attributes]), insert(right, op[:attributes]) }
     end
   end
 
   defp take(op = %{ :insert => _ }, _length) do
-    { op, [] }
+    { op, false }
   end
 
   defp take(op = %{ :retain => op_length }, take_length) do
     case op_length - take_length do
-      0 -> { op, [] }
-      rest -> { retain(take_length, op[:attributes]), [ retain(rest, op[:attributes]) ]}
+      0 -> { op, false }
+      rest -> { retain(take_length, op[:attributes]), retain(rest, op[:attributes]) }
     end
   end
 
   defp take(op = %{ :delete => op_length }, take_length) do
     case op_length - take_length do
-      0 -> { op, [] }
-      rest -> { delete(take_length), [ delete(rest) ] }
+      0 -> { op, false }
+      rest -> { delete(take_length), delete(rest) }
     end
   end
 
