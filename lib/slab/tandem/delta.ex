@@ -1,10 +1,6 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
 
-  def transform(a, b, priority \\ false) do
-    []
-  end
-
 #   # def insert(delta, insert) do
 #   #   [%{ :insert => insert } | delta]
 #   # end
@@ -69,8 +65,11 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
+  def transform(a, index, priority \\ false) when is_integer(index) do
+    index
+  end
 
-#   # def transform(a, b, priority \\ false) do
-
-#   # end
+  def transform(a, b, priority \\ false) do
+    a
+  end
 end
