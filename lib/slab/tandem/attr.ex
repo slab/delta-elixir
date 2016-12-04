@@ -1,6 +1,4 @@
 defmodule Slab.Tandem.Attr do
-  defstruct insert: nil, delete: nil, retain: nil, attributes: nil
-
   def compose(a, b, keepNil \\ false) do
     attr = do_compose(a, b, keepNil)
     cond do

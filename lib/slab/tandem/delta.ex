@@ -65,11 +65,12 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
-  def transform(a, index, priority \\ false) when is_integer(index) do
+  def transform(a, b, priority \\ false)
+  def transform(_a, index, _priority) when is_integer(index) do
     index
   end
 
-  def transform(a, b, priority \\ false) do
+  def transform(a, _b, _priority) do
     a
   end
 end
