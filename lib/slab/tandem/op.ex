@@ -19,25 +19,32 @@ defmodule Slab.Tandem.Op do
     %{ :retain => length }
   end
 
+  def delete?(%{ :delete => _ }), do: true
+  def delete?(_), do: false
+  def insert?(%{ :insert => _ }), do: true
+  def insert?(_), do: false
+  def retain?(%{ :retain => _ }), do: true
+  def retain?(_), do: false
+
   def compose(a, b) do
     size = min(op_len(a), op_len(b))
     { op1, a } = take(a, size)
     { op2, b } = take(b, size)
-    { compose_atomic(op1, op2), a, b }
+    composed =
+      cond do
+        retain?(op1) and retain?(op2) ->
+          attr = Slab.Tandem.Attr.compose(op1[:attributes], op2[:attributes], true)
+          retain(op1.retain, attr)
+        insert?(op1) and retain?(op2) ->
+          attr = Slab.Tandem.Attr.compose(op1[:attributes], op2[:attributes])
+          insert(op1.insert, attr)
+        retain?(op1) and delete?(op2) ->
+          op2
+        true ->
+          false
+      end
+    { composed, a, b }
   end
-
-  defp compose_atomic(a = %{ :retain => length }, b = %{ :retain => _ }) do
-    attr = Slab.Tandem.Attr.compose(a[:attributes], b[:attributes], true)
-    retain(length, attr)
-  end
-
-  defp compose_atomic(a = %{ :insert => ins }, b = %{ :retain => _ }) do
-    attr = Slab.Tandem.Attr.compose(a[:attributes], b[:attributes])
-    insert(ins, attr)
-  end
-
-  defp compose_atomic(%{ :retain => _ }, b = %{ :delete => _ }), do: b
-  defp compose_atomic(_, _), do: false
 
   defp take(op = %{ :insert => text }, length) when is_bitstring(text) do
     case String.length(text) - length do

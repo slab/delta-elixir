@@ -1,14 +1,15 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
 
-  def compose(a, b) do
-    do_compose([], a, b)
+  def compose(left, right) do
+    do_compose([], left, right)
       |> chop()
       |> Enum.reverse()
   end
 
-  def transform(a, b, priority \\ false) do
-    do_transform(a, b, priority)
+  def transform(left, right, priority \\ false) do
+    do_transform([], left, right, priority)
+      |> chop()
       |> Enum.reverse()
   end
 
@@ -40,41 +41,55 @@ defmodule Slab.Tandem.Delta do
   defp chop(delta), do: delta
 
   defp do_compose(result, [], []), do: result
+  defp do_compose(result, [], [op | delta]), do: Enum.reverse(delta) ++ push(result, op)
+  defp do_compose(result, [op | delta], []), do: Enum.reverse(delta) ++ push(result, op)
 
-  defp do_compose(result, [], [op | b]) do
-    Enum.reverse(b) ++ push(result, op)
-  end
-
-  defp do_compose(result, [op | a], []) do
-    Enum.reverse(a) ++ push(result, op)
-  end
-
-  defp do_compose(result, a, [op = %{ :insert => _ } | b]) do
+  defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
+    { delta1, delta2, op } =
+      cond do
+        Op.insert?(op2) -> { [op1 | delta1], delta2, op2 }
+        Op.delete?(op1) -> { delta1, [op2 | delta2], op1 }
+        true ->
+          { composed, op1, op2 } = Op.compose(op1, op2)
+          delta1 = delta1 |> push(op1)
+          delta2 = delta2 |> push(op2)
+          { delta1, delta2, composed }
+      end
     result
     |> push(op)
-    |> do_compose(a, b)
+    |> do_compose(delta1, delta2)
   end
 
-  defp do_compose(result, [op = %{ :delete => _ } | a], b) do
-    result
-    |> push(op)
-    |> do_compose(a, b)
-  end
+  # defp do_transform(result, [], [], _), do: result
+  # defp do_transform(result, [], [op | delta], _), do: Enum.reverse(delta) ++ push(result, op)
+  # defp do_transform(result, [op | delta], []), _, do: Enum.reverse(delta) ++ push(result, op)
 
-  defp do_compose(result, [op1 | d1], [op2 | d2]) do
-    { composed, op1, op2 } = Op.compose(op1, op2)
-    d1 = push(d1, op1)
-    d2 = push(d2, op2)
-    result
-      |> push(composed)
-      |> do_compose(d1, d2)
-  end
+  # defp do_transform(result, [op1 | delta], [op2 | delta], priority) do
 
-  def do_transform(_a, index, _priority) when is_integer(index) do
-    index
-  end
+  # end
 
-  def do_transform(a, _b, _priority) do
+  # defp do_transform(result, a = [%{ :insert => _ } | _], b, false) do
+  #   do_transform_retain(result, a, b, false)
+  # end
+  # defp do_transform(result, a = [%{ :insert => _ } | _], b = [%{ :retain => _ } | _], priority) do
+  #   do_transform_retain(result, a, b, priority)
+  # end
+  # defp do_transform(result, a = [%{ :insert => _ } | _], b = [%{ :delete => _ } | _], priority) do
+  #   do_transform_retain(result, a, b, priority)
+  # end
+  # defp do_transform_retain(result, [op | a], b, priority) do
+  #   result
+  #   |> retain(Op.op_length(op))
+  #   |> do_transform(a, b, priority)
+  # end
+
+  defp do_transform(result, a, _b, _priority) do
     a
   end
+
+
+  # defp do_transform(_a, index, _priority) when is_integer(index) do
+  #   index
+  # end
+
 end
