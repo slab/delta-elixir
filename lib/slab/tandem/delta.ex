@@ -23,17 +23,17 @@ defmodule Slab.Tandem.Delta do
   defp push(delta, op) do
     [lastOp | partial_delta] = delta
     case { lastOp, op } do
-      { %{ :delete => left }, %{ :delete => right } } ->
+      { %{ "delete" => left }, %{ "delete" => right } } ->
         [ Op.delete(left + right) | partial_delta ]
-      { %{ :retain => left, :attributes => attr }, %{ :retain => right, :attributes => attr } } ->
+      { %{ "retain" => left, "attributes" => attr }, %{ "retain" => right, "attributes" => attr } } ->
         [ Op.retain(left + right, attr) | partial_delta ]
-      { %{ :retain => left }, %{ :retain => right } } when map_size(lastOp) == 1 and map_size(op) == 1 ->
+      { %{ "retain" => left }, %{ "retain" => right } } when map_size(lastOp) == 1 and map_size(op) == 1 ->
         [ Op.retain(left + right) | partial_delta ]
-      { %{ :insert => left, :attributes => attr },
-        %{ :insert => right, :attributes => attr }
+      { %{ "insert" => left, "attributes" => attr },
+        %{ "insert" => right, "attributes" => attr }
       } when is_bitstring(left) and is_bitstring(right) ->
         [ Op.insert(left <> right, attr) | partial_delta ]
-      { %{ :insert => left }, %{ :insert => right }
+      { %{ "insert" => left }, %{ "insert" => right }
       } when is_bitstring(left) and is_bitstring(right) and map_size(lastOp) == 1 and map_size(op) == 1 ->
         [ Op.insert(left <> right) | partial_delta ]
       _ ->
@@ -41,7 +41,7 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
-  defp chop([op = %{ :retain => _ } | delta]) when map_size(op) == 1, do: delta
+  defp chop([op = %{ "retain" => _ } | delta]) when map_size(op) == 1, do: delta
   defp chop(delta), do: delta
 
   defp do_compose(result, [], []), do: result
@@ -65,7 +65,7 @@ defmodule Slab.Tandem.Delta do
 
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
   defp do_transform(_, index, [], _) when is_integer(index), do: index
-  defp do_transform(offset, index, [%{ :delete => length } | delta], priority) when is_integer(index) do
+  defp do_transform(offset, index, [%{ "delete" => length } | delta], priority) when is_integer(index) do
     do_transform(offset, index - min(length, index-offset), delta, priority)
   end
   defp do_transform(offset, index, [op | delta], priority) when is_integer(index) do
