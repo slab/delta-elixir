@@ -45,51 +45,51 @@ defmodule Slab.Tandem.Delta do
   defp do_compose(result, [op | delta], []), do: Enum.reverse(delta) ++ push(result, op)
 
   defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
-    { delta1, delta2, op } =
+    { op, delta1, delta2 } =
       cond do
-        Op.insert?(op2) -> { [op1 | delta1], delta2, op2 }
-        Op.delete?(op1) -> { delta1, [op2 | delta2], op1 }
+        Op.insert?(op2) -> { op2, [op1 | delta1], delta2 }
+        Op.delete?(op1) -> { op1, delta1, [op2 | delta2] }
         true ->
           { composed, op1, op2 } = Op.compose(op1, op2)
           delta1 = delta1 |> push(op1)
           delta2 = delta2 |> push(op2)
-          { delta1, delta2, composed }
+          { composed, delta1, delta2 }
       end
     result
     |> push(op)
     |> do_compose(delta1, delta2)
   end
 
-  # defp do_transform(result, [], [], _), do: result
-  # defp do_transform(result, [], [op | delta], _), do: Enum.reverse(delta) ++ push(result, op)
-  # defp do_transform(result, [op | delta], []), _, do: Enum.reverse(delta) ++ push(result, op)
+  defp do_transform(result, [], [], _), do: result
 
-  # defp do_transform(result, [op1 | delta], [op2 | delta], priority) do
+  defp do_transform(result, [], [op | delta], priority) do
+    do_transform(result, [Op.retain(op)], [op | delta], priority)
+  end
 
-  # end
+  defp do_transform(result, [op | delta], [], priority) do
+    do_transform(result, [op | delta], [Op.retain(op)], priority)
+  end
 
-  # defp do_transform(result, a = [%{ :insert => _ } | _], b, false) do
-  #   do_transform_retain(result, a, b, false)
-  # end
-  # defp do_transform(result, a = [%{ :insert => _ } | _], b = [%{ :retain => _ } | _], priority) do
-  #   do_transform_retain(result, a, b, priority)
-  # end
-  # defp do_transform(result, a = [%{ :insert => _ } | _], b = [%{ :delete => _ } | _], priority) do
-  #   do_transform_retain(result, a, b, priority)
-  # end
-  # defp do_transform_retain(result, [op | a], b, priority) do
-  #   result
-  #   |> retain(Op.op_length(op))
-  #   |> do_transform(a, b, priority)
-  # end
-
-  defp do_transform(result, a, _b, _priority) do
-    a
+  defp do_transform(result, [op1 | delta1], [op2 | delta2], priority) do
+    { op, delta1, delta2 } =
+      cond do
+        Op.insert?(op1) and (priority or not Op.insert?(op2)) ->
+          { Op.retain(op1), delta1, [op2 | delta2] }
+        Op.insert?(op2) ->
+          { op2, [op1 | delta1 ], delta2 }
+        true ->
+          { transformed, op1, op2 } = Op.transform(op1, op2, priority)
+          delta1 = delta1 |> push(op1)
+          delta2 = delta2 |> push(op2)
+          { transformed, delta1, delta2 }
+      end
+    result
+    |> push(op)
+    |> do_transform(delta1, delta2, priority)
   end
 
 
   # defp do_transform(_a, index, _priority) when is_integer(index) do
   #   index
   # end
-
 end
