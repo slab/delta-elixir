@@ -7,7 +7,11 @@ defmodule Slab.Tandem.Delta do
       |> Enum.reverse()
   end
 
-  def transform(left, right, priority \\ false) do
+  def transform(_, _, priority \\ false)
+  def transform(index, delta, priority) when is_integer(index) do
+    do_transform(0, index, delta, priority)
+  end
+  def transform(left, right, priority) do
     do_transform([], left, right, priority)
       |> chop()
       |> Enum.reverse()
@@ -43,7 +47,6 @@ defmodule Slab.Tandem.Delta do
   defp do_compose(result, [], []), do: result
   defp do_compose(result, [], [op | delta]), do: Enum.reverse(delta) ++ push(result, op)
   defp do_compose(result, [op | delta], []), do: Enum.reverse(delta) ++ push(result, op)
-
   defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
     { op, delta1, delta2 } =
       cond do
@@ -60,16 +63,23 @@ defmodule Slab.Tandem.Delta do
     |> do_compose(delta1, delta2)
   end
 
-  defp do_transform(result, [], [], _), do: result
+  defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
+  defp do_transform(_, index, [], _) when is_integer(index), do: index
+  defp do_transform(offset, index, [%{ :delete => length } | delta], priority) when is_integer(index) do
+    do_transform(offset, index - min(length, index-offset), delta, priority)
+  end
+  defp do_transform(offset, index, [op | delta], priority) when is_integer(index) do
+    { offset, index } = Op.transform(offset, index, op, priority)
+    do_transform(offset, index, delta, priority)
+  end
 
+  defp do_transform(result, [], [], _), do: result
   defp do_transform(result, [], [op | delta], priority) do
     do_transform(result, [Op.retain(op)], [op | delta], priority)
   end
-
   defp do_transform(result, [op | delta], [], priority) do
     do_transform(result, [op | delta], [Op.retain(op)], priority)
   end
-
   defp do_transform(result, [op1 | delta1], [op2 | delta2], priority) do
     { op, delta1, delta2 } =
       cond do

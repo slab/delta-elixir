@@ -49,6 +49,16 @@ defmodule Slab.Tandem.Op do
     { composed, a, b }
   end
 
+  def transform(offset, index, op, priority) when is_integer(index) do
+    length = op_len(op)
+    cond do
+      insert?(op) and (offset < index or not priority) ->
+        { offset + length, index + length }
+      true ->
+        { offset + length, index }
+    end
+  end
+
   def transform(a, b, priority) do
     { op1, a, op2, b } = next(a, b)
     transformed =
