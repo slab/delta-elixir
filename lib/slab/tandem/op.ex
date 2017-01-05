@@ -91,7 +91,15 @@ defmodule Slab.Tandem.Op do
   end
 
   defp take_partial(op = %{ "insert" => text }, length) do
-    { left, right } = String.split_at(text, length)
+    graphemes = String.graphemes(text)
+    {split, _} = Enum.reduce_while(graphemes, {0, length}, fn(grapheme, {split, remaining}) ->
+      remaining = remaining - if byte_size(grapheme) >= 4, do: 2, else: 1 # Deal with JS UTF-16 encoding
+      split = split + byte_size(grapheme)
+      halt = if remaining > 0, do: :cont, else: :halt
+      {halt, {split, remaining}}
+    end)
+    left = Kernel.binary_part(text, 0, split)
+    right = Kernel.binary_part(text, split, byte_size(text) - split)
     { insert(left, op["attributes"]), insert(right, op["attributes"]) }
   end
   defp take_partial(%{ "delete" => full }, length) do
@@ -101,7 +109,14 @@ defmodule Slab.Tandem.Op do
     { retain(length, op["attributes"]), retain(full - length, op["attributes"]) }
   end
 
-  defp op_len(%{ "insert" => text }) when is_bitstring(text), do: String.length(text)
+  defp op_len(%{ "insert" => text }) when is_bitstring(text) do
+    text
+    |> String.graphemes()
+    |> Enum.reduce(0, fn(grapheme, sum) ->
+        sum + if byte_size(grapheme) >= 4, do: 2, else: 1 # Deal with JS UTF-16 encoding
+      end)
+  end
+
   defp op_len(%{ "insert" => _ }), do: 1
   defp op_len(%{ "retain" => len }), do: len
   defp op_len(%{ "delete" => len }), do: len
