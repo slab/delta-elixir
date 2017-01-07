@@ -15,7 +15,7 @@ defmodule Slab.Tandem.Op do
 
   def retain(length, attr \\ false)
   def retain(op, attr) when is_map(op) do
-    retain(op_len(op), attr)
+    op |> size() |> retain(attr)
   end
   def retain(length, attr = %{}) when map_size(attr) > 0 do
     %{ "retain" => length, "attributes" => attr }
@@ -30,6 +30,18 @@ defmodule Slab.Tandem.Op do
   def insert?(_), do: false
   def retain?(%{ "retain" => _ }), do: true
   def retain?(_), do: false
+
+  def size(%{ "insert" => text }) when is_bitstring(text) do
+    text
+    |> String.graphemes()
+    |> Enum.reduce(0, fn(grapheme, sum) ->
+        sum + if byte_size(grapheme) >= 4, do: 2, else: 1 # Deal with JS UTF-16 encoding
+      end)
+  end
+
+  def size(%{ "insert" => _ }), do: 1
+  def size(%{ "retain" => len }), do: len
+  def size(%{ "delete" => len }), do: len
 
   def compose(a, b) do
     { op1, a, op2, b } = next(a, b)
@@ -50,7 +62,7 @@ defmodule Slab.Tandem.Op do
   end
 
   def transform(offset, index, op, priority) when is_integer(index) do
-    length = op_len(op)
+    length = size(op)
     cond do
       insert?(op) and (offset < index or not priority) ->
         { offset + length, index + length }
@@ -73,7 +85,7 @@ defmodule Slab.Tandem.Op do
   end
 
   defp next(a, b) do
-    size = min(op_len(a), op_len(b))
+    size = min(size(a), size(b))
     { op1, a } = take(a, size)
     { op2, b } = take(b, size)
     { op1, a, op2, b }
@@ -84,7 +96,7 @@ defmodule Slab.Tandem.Op do
   end
 
   defp take(op, length) do
-    case op_len(op) - length do
+    case size(op) - length do
       0 -> { op, false }
       _ -> take_partial(op, length)
     end
@@ -108,16 +120,4 @@ defmodule Slab.Tandem.Op do
   defp take_partial(op = %{ "retain" => full }, length) do
     { retain(length, op["attributes"]), retain(full - length, op["attributes"]) }
   end
-
-  defp op_len(%{ "insert" => text }) when is_bitstring(text) do
-    text
-    |> String.graphemes()
-    |> Enum.reduce(0, fn(grapheme, sum) ->
-        sum + if byte_size(grapheme) >= 4, do: 2, else: 1 # Deal with JS UTF-16 encoding
-      end)
-  end
-
-  defp op_len(%{ "insert" => _ }), do: 1
-  defp op_len(%{ "retain" => len }), do: len
-  defp op_len(%{ "delete" => len }), do: len
 end

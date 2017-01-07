@@ -7,6 +7,18 @@ defmodule Slab.Tandem.Delta do
       |> Enum.reverse()
   end
 
+  def concat(left, right) when length(right) == 0, do: left
+  def concat(left, right) when length(left) == 0, do: right
+  def concat(left, [first | right]) do
+    (left |> push(first)) ++ right
+  end
+
+  def size(delta) do
+    Enum.reduce(delta, 0, fn(op, sum) ->
+      sum + Op.size(op)
+    end)
+  end
+
   def transform(_, _, priority \\ false)
   def transform(index, delta, priority) when is_integer(index) do
     do_transform(0, index, delta, priority)
