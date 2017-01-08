@@ -10,7 +10,11 @@ defmodule Slab.Tandem.Delta do
   def concat(left, right) when length(right) == 0, do: left
   def concat(left, right) when length(left) == 0, do: right
   def concat(left, [first | right]) do
-    (left |> push(first)) ++ right
+    left = left
+      |> Enum.reverse()
+      |> push(first)
+      |> Enum.reverse()
+    left ++ right
   end
 
   def size(delta) do
@@ -32,6 +36,7 @@ defmodule Slab.Tandem.Delta do
   defp push(delta, false), do: delta
   defp push(delta, op) when length(delta) == 0, do: [op]
 
+  # Adds op to the beginning of delta (we expect a reverse)
   defp push(delta, op) do
     [lastOp | partial_delta] = delta
     case { lastOp, op } do
