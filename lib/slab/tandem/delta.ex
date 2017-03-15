@@ -58,6 +58,18 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
+  def text(delta, embed \\ "|") do
+    delta
+    |> Enum.map(fn(op) ->
+        case op do
+          %{ "insert" => text } when is_bitstring(text) -> text
+          %{ "insert" => _ } -> embed
+          _ -> ""
+        end
+      )
+    |> Enum.join("")
+  end
+
   defp chop([op = %{ "retain" => _ } | delta]) when map_size(op) == 1, do: delta
   defp chop(delta), do: delta
 
