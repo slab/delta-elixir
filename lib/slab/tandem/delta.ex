@@ -56,7 +56,7 @@ defmodule Slab.Tandem.Delta do
           %{ "insert" => _ } -> embed
           _ -> ""
         end
-      )
+      end)
     |> Enum.join("")
   end
 
