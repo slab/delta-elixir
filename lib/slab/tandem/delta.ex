@@ -17,27 +17,11 @@ defmodule Slab.Tandem.Delta do
     left ++ right
   end
 
-  def size(delta) do
-    Enum.reduce(delta, 0, fn(op, sum) ->
-      sum + Op.size(op)
-    end)
-  end
-
-  def transform(_, _, priority \\ false)
-  def transform(index, delta, priority) when is_integer(index) do
-    do_transform(0, index, delta, priority)
-  end
-  def transform(left, right, priority) do
-    do_transform([], left, right, priority)
-      |> chop()
-      |> Enum.reverse()
-  end
-
-  defp push(delta, false), do: delta
-  defp push(delta, op) when length(delta) == 0, do: [op]
+  def push(delta, false), do: delta
+  def push(delta, op) when length(delta) == 0, do: [op]
 
   # Adds op to the beginning of delta (we expect a reverse)
-  defp push(delta, op) do
+  def push(delta, op) do
     [lastOp | partial_delta] = delta
     case { lastOp, op } do
       { %{ "delete" => left }, %{ "delete" => right } } ->
@@ -58,6 +42,12 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
+  def size(delta) do
+    Enum.reduce(delta, 0, fn(op, sum) ->
+      sum + Op.size(op)
+    end)
+  end
+
   def text(delta, embed \\ "|") do
     delta
     |> Enum.map(fn(op) ->
@@ -68,6 +58,16 @@ defmodule Slab.Tandem.Delta do
         end
       )
     |> Enum.join("")
+  end
+
+  def transform(_, _, priority \\ false)
+  def transform(index, delta, priority) when is_integer(index) do
+    do_transform(0, index, delta, priority)
+  end
+  def transform(left, right, priority) do
+    do_transform([], left, right, priority)
+      |> chop()
+      |> Enum.reverse()
   end
 
   defp chop([op = %{ "retain" => _ } | delta]) when map_size(op) == 1, do: delta
