@@ -43,6 +43,20 @@ defmodule Slab.Tandem.Op do
   def size(%{ "retain" => len }), do: len
   def size(%{ "delete" => len }), do: len
 
+
+  def take(op, 0), do: { false, op }
+
+  def take(op = %{ "insert" => embed }, _length) when not is_bitstring(embed) do
+    { op, false }
+  end
+
+  def take(op, length) do
+    case size(op) - length do
+      0 -> { op, false }
+      _ -> take_partial(op, length)
+    end
+  end
+
   def compose(a, b) do
     { op1, a, op2, b } = next(a, b)
     composed =
@@ -89,17 +103,6 @@ defmodule Slab.Tandem.Op do
     { op1, a } = take(a, size)
     { op2, b } = take(b, size)
     { op1, a, op2, b }
-  end
-
-  defp take(op = %{ "insert" => embed }, _length) when not is_bitstring(embed) do
-    { op, false }
-  end
-
-  defp take(op, length) do
-    case size(op) - length do
-      0 -> { op, false }
-      _ -> take_partial(op, length)
-    end
   end
 
   defp take_partial(op = %{ "insert" => text }, length) do

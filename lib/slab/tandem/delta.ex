@@ -48,6 +48,34 @@ defmodule Slab.Tandem.Delta do
     end)
   end
 
+  def slice([], _, _), do: []
+  def slice(delta, index, length) do
+    [first | rest] = delta
+    op_size = Op.size(first)
+    if index < op_size do
+      delta =
+        case index do
+          0 -> delta
+          _ ->
+            {_, right} = Op.take(first, index)
+            [right | rest]
+        end
+      {delta, _} =
+        Enum.reduce_while(delta, {[], length}, fn(op, {delta, length}) ->
+          op_size = Op.size(op)
+          if length <= op_size do
+            {left, _} = Op.take(op, length)
+            {:halt, {[left | delta], 0}}
+          else
+            {:cont, {[op | delta], length - op_size }}
+          end
+        end)
+      Enum.reverse(delta)
+    else
+      slice(rest, index - op_size, length)
+    end
+  end
+
   def text(delta, embed \\ "|") do
     delta
     |> Enum.map(fn(op) ->
@@ -126,9 +154,4 @@ defmodule Slab.Tandem.Delta do
     |> push(op)
     |> do_transform(delta1, delta2, priority)
   end
-
-
-  # defp do_transform(_a, index, _priority) when is_integer(index) do
-  #   index
-  # end
 end
