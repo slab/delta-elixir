@@ -16,7 +16,7 @@ defmodule Slab.Tandem.Attr do
       |> Enum.reduce([], fn(k, list) ->
         case Map.has_key?(a, k) do
           true -> list
-          false -> [{ k, b[k] } | list]
+          false -> [{k, b[k]} | list]
         end
       end)
       |> Map.new
