@@ -2,9 +2,7 @@ defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
 
   def compose(left, right) do
-    do_compose([], left, right)
-      |> chop()
-      |> Enum.reverse()
+    [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
   def concat(left, right) when length(right) == 0, do: left
@@ -82,9 +80,8 @@ defmodule Slab.Tandem.Delta do
     do_transform(0, index, delta, priority)
   end
   def transform(left, right, priority) do
-    do_transform([], left, right, priority)
-    |> chop()
-    |> Enum.reverse()
+    delta = do_transform([], left, right, priority)
+    delta |> chop() |> Enum.reverse()
   end
 
   defp chop([%{"retain" => _} = op | delta]) when map_size(op) == 1, do: delta
