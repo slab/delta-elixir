@@ -23,32 +23,11 @@ defmodule Slab.Tandem.Delta do
   # Adds op to the beginning of delta (we expect a reverse)
   def push(delta, op) do
     [last_op | partial_delta] = delta
-    case {last_op, op} do
-      {%{"delete" => left}, %{"delete" => right}} ->
-        [Op.delete(left + right) | partial_delta]
-
-      {%{"retain" => left, "attributes" => attr},
-       %{"retain" => right, "attributes" => attr}} ->
-        [Op.retain(left + right, attr) | partial_delta]
-
-      {%{"retain" => left}, %{"retain" => right}
-      } when map_size(last_op) == 1 and map_size(op) == 1 ->
-        [Op.retain(left + right) | partial_delta]
-
-      {%{"insert" => left, "attributes" => attr},
-       %{"insert" => right, "attributes" => attr}
-      } when is_bitstring(left) and is_bitstring(right) ->
-        [Op.insert(left <> right, attr) | partial_delta]
-
-      {%{"insert" => left}, %{"insert" => right}
-      } when (is_bitstring(left) and
-              is_bitstring(right) and
-              map_size(last_op) == 1 and
-              map_size(op) == 1) ->
-        [Op.insert(left <> right) | partial_delta]
-
-      _ ->
-        [op | delta]
+    merged_op = do_push(last_op, op)
+    if is_nil(merged_op) do
+      [op | delta]
+    else
+      [merged_op | partial_delta]
     end
   end
 
@@ -133,6 +112,34 @@ defmodule Slab.Tandem.Delta do
     |> push(op)
     |> do_compose(delta1, delta2)
   end
+
+  defp do_push(%{"delete" => left}, %{"delete" => right}) do
+    Op.delete(left + right)
+  end
+
+  defp do_push(%{"retain" => left, "attributes" => attr},
+               %{"retain" => right, "attributes" => attr}) do
+    Op.retain(left + right, attr)
+  end
+
+  defp do_push(%{"retain" => left} = last_op, %{"retain" => right} = op)
+               when map_size(last_op) == 1 and map_size(op) == 1 do
+    Op.retain(left + right)
+  end
+
+  defp do_push(%{"insert" => left, "attributes" => attr},
+               %{"insert" => right, "attributes" => attr})
+               when is_bitstring(left) and is_bitstring(right) do
+    Op.insert(left <> right, attr)
+  end
+
+  defp do_push(%{"insert" => left} = last_op, %{"insert" => right} = op)
+               when is_bitstring(left) and is_bitstring(right) and
+                    map_size(last_op) == 1 and map_size(op) == 1 do
+    Op.insert(left <> right)
+  end
+
+  defp do_push(_, _), do: nil
 
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
   defp do_transform(_, index, [], _) when is_integer(index), do: index

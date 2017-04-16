@@ -77,11 +77,10 @@ defmodule Slab.Tandem.Op do
 
   def transform(offset, index, op, priority) when is_integer(index) do
     length = size(op)
-    cond do
-      insert?(op) and (offset < index or not priority) ->
-        {offset + length, index + length}
-      true ->
-        {offset + length, index}
+    if insert?(op) and (offset < index or not priority) do
+      {offset + length, index + length}
+    else
+      {offset + length, index}
     end
   end
 
