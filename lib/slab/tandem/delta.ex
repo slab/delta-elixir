@@ -22,8 +22,8 @@ defmodule Slab.Tandem.Delta do
 
   # Adds op to the beginning of delta (we expect a reverse)
   def push(delta, op) do
-    [lastOp | partial_delta] = delta
-    case {lastOp, op} do
+    [last_op | partial_delta] = delta
+    case {last_op, op} do
       {%{"delete" => left}, %{"delete" => right}} ->
         [Op.delete(left + right) | partial_delta]
 
@@ -32,7 +32,7 @@ defmodule Slab.Tandem.Delta do
         [Op.retain(left + right, attr) | partial_delta]
 
       {%{"retain" => left}, %{"retain" => right}
-      } when map_size(lastOp) == 1 and map_size(op) == 1 ->
+      } when map_size(last_op) == 1 and map_size(op) == 1 ->
         [Op.retain(left + right) | partial_delta]
 
       {%{"insert" => left, "attributes" => attr},
@@ -43,7 +43,7 @@ defmodule Slab.Tandem.Delta do
       {%{"insert" => left}, %{"insert" => right}
       } when (is_bitstring(left) and
               is_bitstring(right) and
-              map_size(lastOp) == 1 and
+              map_size(last_op) == 1 and
               map_size(op) == 1) ->
         [Op.insert(left <> right) | partial_delta]
 
