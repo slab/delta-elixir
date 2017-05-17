@@ -16,7 +16,13 @@ defmodule Slab.Tandem.Delta do
   end
 
   def push(delta, false), do: delta
-  def push(delta, op) when length(delta) == 0, do: [op]
+  def push(delta, op) when length(delta) == 0 do
+    case op do
+      %{"retain" => 0} -> delta
+      %{"delete" => 0} -> delta
+      _ -> [op]
+    end
+  end
 
   # Adds op to the beginning of delta (we expect a reverse)
   def push(delta, op) do
@@ -110,9 +116,13 @@ defmodule Slab.Tandem.Delta do
     |> do_compose(delta1, delta2)
   end
 
+  defp do_push(op, %{"delete" => 0}), do: op
+
   defp do_push(%{"delete" => left}, %{"delete" => right}) do
     Op.delete(left + right)
   end
+
+  defp do_push(op, %{"retain" => 0}), do: op
 
   defp do_push(%{"retain" => left, "attributes" => attr},
                %{"retain" => right, "attributes" => attr}) do
