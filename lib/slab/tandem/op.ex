@@ -120,7 +120,7 @@ defmodule Slab.Tandem.Op do
   defp take_partial(%{"delete" => full}, length) do
     {delete(length), delete(full - length)}
   end
-  defp take_partial(op = %{"retain" => full}, length) do
+  defp take_partial(%{"retain" => full} = op, length) do
     {retain(length, op["attributes"]), retain(full - length, op["attributes"])}
   end
 end
