@@ -41,32 +41,24 @@ defmodule Slab.Tandem.Delta do
     end)
   end
 
-  def slice([], _, _), do: []
-  def slice(delta, index, length) do
-    [first | rest] = delta
-    op_size = Op.size(first)
-    if index < op_size do
-      delta =
-        case index do
-          0 -> delta
-          _ ->
-            {_, right} = Op.take(first, index)
-            [right | rest]
-        end
-      {delta, _} =
-        Enum.reduce_while(delta, {[], length}, fn(op, {delta, length}) ->
-          op_size = Op.size(op)
-          if length <= op_size do
-            {left, _} = Op.take(op, length)
-            {:halt, {[left | delta], 0}}
-          else
-            {:cont, {[op | delta], length - op_size}}
-          end
-        end)
-      Enum.reverse(delta)
-    else
-      slice(rest, index - op_size, length)
-    end
+  def slice(delta, index, len) do
+    {_left, right} = split(delta, index)
+    {middle, _rest} = split(right, len)
+    middle
+  end
+
+  def split(delta, index) when is_integer(index) do
+    do_split([], delta, fn(op, index) ->
+      op_size = Op.size(op)
+      if index <= op_size do
+        index
+      else
+        {:cont, index - op_size}
+      end
+    end, index)
+  end
+  def split(delta, func) when is_function(func, 2) do
+    do_split([], delta, func)
   end
 
   def text(delta, embed \\ "|") do
@@ -147,6 +139,25 @@ defmodule Slab.Tandem.Delta do
   end
 
   defp do_push(_, _), do: nil
+
+  defp do_split(passed, remaining, func, context \\ nil)
+  defp do_split(passed, [], _, _), do: {passed, []}
+  defp do_split(passed, remaining, func, context) when is_function(func, 2) do
+    [first | remaining] = remaining
+    case func.(first, context) do
+      {:cont, context} ->
+        do_split([first | passed], remaining, func, context)
+      index ->
+        case Op.take(first, index) do
+          {false, right} ->
+            {Enum.reverse(passed), [right | remaining]}
+          {left, false} ->
+            {Enum.reverse([left | passed]), remaining}
+          {left, right} ->
+            {Enum.reverse([left | passed]), [right | remaining]}
+        end
+    end
+  end
 
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
   defp do_transform(_, index, [], _) when is_integer(index), do: index
