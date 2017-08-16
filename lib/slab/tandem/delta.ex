@@ -57,7 +57,7 @@ defmodule Slab.Tandem.Delta do
       end
     end, index)
   end
-  def split(delta, func) when is_function(func, 2) do
+  def split(delta, func) when is_function(func) do
     do_split([], delta, func)
   end
 
@@ -142,9 +142,14 @@ defmodule Slab.Tandem.Delta do
 
   defp do_split(passed, remaining, func, context \\ nil)
   defp do_split(passed, [], _, _), do: {passed, []}
+  defp do_split(passed, remaining, func, context) when is_function(func, 1) do
+    do_split(passed, remaining, fn(op, _) -> func.(op) end, context)
+  end
   defp do_split(passed, remaining, func, context) when is_function(func, 2) do
     [first | remaining] = remaining
     case func.(first, context) do
+      :cont ->
+        do_split([first | passed], remaining, func, context)
       {:cont, context} ->
         do_split([first | passed], remaining, func, context)
       index ->
