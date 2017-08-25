@@ -1,4 +1,5 @@
 defmodule Slab.Tandem.Op do
+  require Logger
   alias Slab.Tandem.Attr
 
   def delete(length) do
@@ -32,11 +33,10 @@ defmodule Slab.Tandem.Op do
   def retain?(_), do: false
 
   def size(%{"insert" => text}) when is_bitstring(text) do
-    text
-    |> String.graphemes()
-    |> Enum.reduce(0, fn(grapheme, sum) ->
-        sum + if byte_size(grapheme) >= 4, do: 2, else: 1 # Deal with JS UTF-16 encoding
-      end)
+    binary_size = text
+      |> :unicode.characters_to_binary(:utf8, :utf16)
+      |> byte_size()
+    round(binary_size / 2)
   end
 
   def size(%{"insert" => _}), do: 1
@@ -104,18 +104,21 @@ defmodule Slab.Tandem.Op do
     {op1, a, op2, b}
   end
 
-  defp take_partial(%{"insert" => text} = op, length) do
-    graphemes = String.graphemes(text)
-    {split, _} = Enum.reduce_while(graphemes, {0, length}, fn(grapheme, {split, remaining}) ->
-      # Deal with JS UTF-16 encoding
-      remaining = remaining - if byte_size(grapheme) >= 4, do: 2, else: 1
-      split = split + byte_size(grapheme)
-      halt = if remaining > 0, do: :cont, else: :halt
-      {halt, {split, remaining}}
-    end)
-    left = Kernel.binary_part(text, 0, split)
-    right = Kernel.binary_part(text, split, byte_size(text) - split)
-    {insert(left, op["attributes"]), insert(right, op["attributes"])}
+  defp take_partial(%{"insert" => text} = op, len) do
+    binary = :unicode.characters_to_binary(text, :utf8, :utf16)
+    binary_length = byte_size(binary)
+    left = binary
+      |> Kernel.binary_part(0, len * 2)
+      |> :unicode.characters_to_binary(:utf16, :utf8)
+    right = binary
+      |> Kernel.binary_part(len * 2, binary_length - len * 2)
+      |> :unicode.characters_to_binary(:utf16, :utf8)
+    case {is_binary(left), is_binary(right)} do
+      {true, true} -> {insert(left, op["attributes"]), insert(right, op["attributes"])}
+      _ ->
+        Logger.error("Encoding failed in take_partial inspect({text, op, len, left, right})")
+        raise "Encoding fail!"
+    end
   end
   defp take_partial(%{"delete" => full}, length) do
     {delete(length), delete(full - length)}
