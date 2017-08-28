@@ -116,7 +116,7 @@ defmodule Slab.Tandem.Op do
     case {is_binary(left), is_binary(right)} do
       {true, true} -> {insert(left, op["attributes"]), insert(right, op["attributes"])}
       _ ->
-        Logger.error("Encoding failed in take_partial inspect({text, op, len, left, right})")
+        Logger.error("Encoding failed in take_partial #{inspect({text, op, len, left, right})}")
         raise "Encoding fail!"
     end
   end
