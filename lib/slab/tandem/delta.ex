@@ -1,8 +1,8 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
 
-  def change_size(delta) do
-    Enum.reduce(delta, 0, fn(op, sum) ->
+  def checksum(delta, initial \\ 0) do
+    Enum.reduce(delta, initial, fn(op, sum) ->
       case op do
         %{"insert" => _} -> sum + Op.size(op)
         %{"delete" => delete} -> sum - delete
