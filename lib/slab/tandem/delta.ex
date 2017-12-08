@@ -15,8 +15,8 @@ defmodule Slab.Tandem.Delta do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
-  def concat(left, right) when Enum.empty?(right), do: left
-  def concat(left, right) when Enum.empty?(left), do: right
+  def concat(left, []), do: left
+  def concat([], right), do: right
   def concat(left, [first | right]) do
     left = left
       |> Enum.reverse()
@@ -26,10 +26,10 @@ defmodule Slab.Tandem.Delta do
   end
 
   def push(delta, false), do: delta
-  def push(delta, op) when Enum.empty?(delta) do
+  def push([], op) do
     case op do
-      %{"retain" => 0} -> delta
-      %{"delete" => 0} -> delta
+      %{"retain" => 0} -> []
+      %{"delete" => 0} -> []
       _ -> [op]
     end
   end
