@@ -6,42 +6,60 @@ defmodule Slab.TandemTest.Delta.Transform do
   test "insert + insert" do
     a = [%{"insert" => "A"}]
     b = [%{"insert" => "B"}]
-    assert(Delta.transform(a, b, true) == [
-      %{"retain" => 1},
-      %{"insert" => "B"}
-    ])
-    assert(Delta.transform(a, b, false) == [
-      %{"insert" => "B"}
-    ])
+
+    assert(
+      Delta.transform(a, b, true) == [
+        %{"retain" => 1},
+        %{"insert" => "B"}
+      ]
+    )
+
+    assert(
+      Delta.transform(a, b, false) == [
+        %{"insert" => "B"}
+      ]
+    )
   end
 
   test "insert + retain" do
     a = [%{"insert" => "A"}]
-    b = [%{
-      "retain" => 1,
-      "attributes" => %{
-        bold: true,
-        color: "red"
+
+    b = [
+      %{
+        "retain" => 1,
+        "attributes" => %{
+          bold: true,
+          color: "red"
+        }
       }
-    }]
-    assert(Delta.transform(a, b) == [%{
-      "retain" => 1
-    }, %{
-      "retain" => 1,
-      "attributes" => %{
-        bold: true,
-        color: "red"
-      }
-    }])
+    ]
+
+    assert(
+      Delta.transform(a, b) == [
+        %{
+          "retain" => 1
+        },
+        %{
+          "retain" => 1,
+          "attributes" => %{
+            bold: true,
+            color: "red"
+          }
+        }
+      ]
+    )
   end
 
   test "insert + delete" do
     a = [%{"insert" => "A"}]
     b = [%{"delete" => 1}]
-    assert(Delta.transform(a, b, true) == [
-      %{"retain" => 1},
-      %{"delete" => 1}
-    ])
+
+    assert(
+      Delta.transform(a, b, true) == [
+        %{"retain" => 1},
+        %{"delete" => 1}
+      ]
+    )
   end
 
   test "delete + insert" do
@@ -71,21 +89,40 @@ defmodule Slab.TandemTest.Delta.Transform do
   test "retain + retain" do
     a = [%{"retain" => 1, "attributes" => %{color: "blue"}}]
     b = [%{"retain" => 1, "attributes" => %{bold: true, color: "red"}}]
-    assert(Delta.transform(a, b, true) == [%{
-      "retain" => 1, "attributes" => %{bold: true}
-    }])
+
+    assert(
+      Delta.transform(a, b, true) == [
+        %{
+          "retain" => 1,
+          "attributes" => %{bold: true}
+        }
+      ]
+    )
+
     assert(Delta.transform(b, a, true) == [])
   end
 
   test "retain + retain without priority" do
     a = [%{"retain" => 1, "attributes" => %{color: "blue"}}]
     b = [%{"retain" => 1, "attributes" => %{bold: true, color: "red"}}]
-    assert(Delta.transform(a, b, false) == [%{
-      "retain" => 1, "attributes" => %{bold: true, color: "red"}
-    }])
-    assert(Delta.transform(b, a, false) == [%{
-      "retain" => 1, "attributes" => %{color: "blue"}
-    }])
+
+    assert(
+      Delta.transform(a, b, false) == [
+        %{
+          "retain" => 1,
+          "attributes" => %{bold: true, color: "red"}
+        }
+      ]
+    )
+
+    assert(
+      Delta.transform(b, a, false) == [
+        %{
+          "retain" => 1,
+          "attributes" => %{color: "blue"}
+        }
+      ]
+    )
   end
 
   test "retain + delete" do
@@ -96,6 +133,7 @@ defmodule Slab.TandemTest.Delta.Transform do
 
   test "alternating edits" do
     a = [%{"retain" => 2}, %{"insert" => "si"}, %{"delete" => 5}]
+
     b = [
       %{"retain" => 1},
       %{"insert" => "e"},
@@ -103,18 +141,24 @@ defmodule Slab.TandemTest.Delta.Transform do
       %{"retain" => 1},
       %{"insert" => "ow"}
     ]
-    assert(Delta.transform(a, b, false) == [
-      %{"retain" => 1},
-      %{"insert" => "e"},
-      %{"delete" => 1},
-      %{"retain" => 2},
-      %{"insert" => "ow"}
-    ])
-    assert(Delta.transform(b, a, false) == [
-      %{"retain" => 2},
-      %{"insert" => "si"},
-      %{"delete" => 1}
-    ])
+
+    assert(
+      Delta.transform(a, b, false) == [
+        %{"retain" => 1},
+        %{"insert" => "e"},
+        %{"delete" => 1},
+        %{"retain" => 2},
+        %{"insert" => "ow"}
+      ]
+    )
+
+    assert(
+      Delta.transform(b, a, false) == [
+        %{"retain" => 2},
+        %{"insert" => "si"},
+        %{"delete" => 1}
+      ]
+    )
   end
 
   test "conflicting appends" do

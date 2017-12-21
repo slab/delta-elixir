@@ -12,29 +12,42 @@ defmodule Slab.TandemTest.Delta.Compose do
   test "insert + insert with attributes" do
     a = [%{"insert" => "A", "attributes" => %{bold: true}}]
     b = [%{"insert" => "B", "attributes" => %{bold: true}}]
-    assert(Delta.compose(a, b) == [%{
-      "insert" => "BA",
-      "attributes" => %{bold: true}
-    }])
+
+    assert(
+      Delta.compose(a, b) == [
+        %{
+          "insert" => "BA",
+          "attributes" => %{bold: true}
+        }
+      ]
+    )
   end
 
   test "insert + retain" do
     a = [%{"insert" => "A"}]
-    b = [%{
-      "retain" => 1,
-      "attributes" => %{
-        bold: true,
-        color: "red",
-        font: nil
+
+    b = [
+      %{
+        "retain" => 1,
+        "attributes" => %{
+          bold: true,
+          color: "red",
+          font: nil
+        }
       }
-    }]
-    assert(Delta.compose(a, b) == [%{
-      "insert" => "A",
-      "attributes" => %{
-        bold: true,
-        color: "red"
-      }
-    }])
+    ]
+
+    assert(
+      Delta.compose(a, b) == [
+        %{
+          "insert" => "A",
+          "attributes" => %{
+            bold: true,
+            color: "red"
+          }
+        }
+      ]
+    )
   end
 
   test "insert + delete" do
@@ -75,23 +88,31 @@ defmodule Slab.TandemTest.Delta.Compose do
 
   test "retain + retain" do
     a = [%{"retain" => 1, "attributes" => %{color: "blue", italic: true}}]
-    b = [%{
-      "retain" => 1,
-      "attributes" => %{
-        bold: true,
-        color: "red",
-        font: nil
+
+    b = [
+      %{
+        "retain" => 1,
+        "attributes" => %{
+          bold: true,
+          color: "red",
+          font: nil
+        }
       }
-    }]
-    assert(Delta.compose(a, b) == [%{
-      "retain" => 1,
-      "attributes" => %{
-        bold: true,
-        color: "red",
-        italic: true,
-        font: nil
-      }
-    }])
+    ]
+
+    assert(
+      Delta.compose(a, b) == [
+        %{
+          "retain" => 1,
+          "attributes" => %{
+            bold: true,
+            color: "red",
+            italic: true,
+            font: nil
+          }
+        }
+      ]
+    )
   end
 
   test "retain + delete" do
@@ -118,13 +139,18 @@ defmodule Slab.TandemTest.Delta.Compose do
   test "insert embed" do
     a = [%{"insert" => %{image: "image.png"}, "attributes" => %{width: "300"}}]
     b = [%{"retain" => 1, "attributes" => %{height: "200"}}]
-    assert(Delta.compose(a, b) == [%{
-      "insert" => %{image: "image.png"},
-      "attributes" => %{
-        height: "200",
-        width: "300"
-      }
-    }])
+
+    assert(
+      Delta.compose(a, b) == [
+        %{
+          "insert" => %{image: "image.png"},
+          "attributes" => %{
+            height: "200",
+            width: "300"
+          }
+        }
+      ]
+    )
   end
 
   test "delete entire text" do
@@ -159,6 +185,7 @@ defmodule Slab.TandemTest.Delta.Compose do
 
   test "long composition" do
     a = [%{"insert" => "HloWrd"}]
+
     b = [
       %{"retain" => 1},
       %{"insert" => "e"},
@@ -173,6 +200,7 @@ defmodule Slab.TandemTest.Delta.Compose do
       %{"retain" => 1},
       %{"insert" => "!"}
     ]
+
     assert(Delta.compose(a, b) == [%{"insert" => "Hello World!"}])
   end
 end

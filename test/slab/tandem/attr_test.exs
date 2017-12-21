@@ -19,19 +19,25 @@ defmodule Slab.TandemTest.Attr do
 
   test "compose missing" do
     param = %{italic: true}
-    assert(Attr.compose(@attr, param) == %{
-      bold: true,
-      italic: true,
-      color: "red"
-    })
+
+    assert(
+      Attr.compose(@attr, param) == %{
+        bold: true,
+        italic: true,
+        color: "red"
+      }
+    )
   end
 
   test "compose overwrite" do
     param = %{bold: false, color: "blue"}
-    assert(Attr.compose(@attr, param) == %{
-      bold: false,
-      color: "blue"
-    })
+
+    assert(
+      Attr.compose(@attr, param) == %{
+        bold: false,
+        color: "blue"
+      }
+    )
   end
 
   test "compose remove" do
@@ -41,10 +47,13 @@ defmodule Slab.TandemTest.Attr do
 
   test "compose keep removal" do
     param = %{bold: nil}
-    assert(Attr.compose(@attr, param, true) == %{
-      bold: nil,
-      color: "red"
-    })
+
+    assert(
+      Attr.compose(@attr, param, true) == %{
+        bold: nil,
+        color: "red"
+      }
+    )
   end
 
   # TODO divergent behavior vs JS Delta
