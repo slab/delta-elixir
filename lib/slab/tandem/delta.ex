@@ -1,16 +1,6 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
 
-  def checksum(delta, initial \\ 0) do
-    Enum.reduce(delta, initial, fn op, sum ->
-      case op do
-        %{"insert" => _} -> sum + Op.size(op)
-        %{"delete" => delete} -> sum - delete
-        _ -> sum
-      end
-    end)
-  end
-
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
@@ -249,34 +239,5 @@ defmodule Slab.Tandem.Delta do
     result
     |> push(op)
     |> do_transform(delta1, delta2, priority)
-  end
-
-  defp is_block_embed(%{"image" => _}), do: true
-  defp is_block_embed(_), do: false
-
-  defp next_line(delta) do
-    [%{"insert" => insert} = op | rest] = delta
-
-    cond do
-      is_bitstring(insert) && String.contains?(insert, "\n") ->
-        [left, right] = String.split(insert, "\n", parts: 2)
-        left = if String.length(left) > 0, do: [Op.insert(left)], else: []
-        attr = op["attributes"] || %{}
-
-        rest =
-          if String.length(right) > 0, do: [Op.insert(right, op["attributes"]) | rest], else: rest
-
-        {left, attr, rest}
-
-      is_block_embed(insert) ->
-        {[op], %{}, rest}
-
-      length(rest) > 0 ->
-        {next, attr, rest} = next_line(rest)
-        {[op | next], attr, rest}
-
-      true ->
-        {[op], %{}, []}
-    end
   end
 end
