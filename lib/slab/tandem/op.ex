@@ -1,5 +1,5 @@
 defmodule Slab.Tandem.Op do
-  require Logger
+  alias Slab.Logger
   alias Slab.Tandem.Attr
 
   def delete(length) do
