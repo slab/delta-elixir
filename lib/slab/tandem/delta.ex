@@ -5,6 +5,10 @@ defmodule Slab.Tandem.Delta do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
+  def compose_all(deltas) do
+    Enum.reduce(deltas, [], &compose(&2, &1))
+  end
+
   def concat(left, []), do: left
   def concat([], right), do: right
 
