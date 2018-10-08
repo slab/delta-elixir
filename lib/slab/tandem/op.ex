@@ -37,13 +37,15 @@ defmodule Slab.Tandem.Op do
   def retain?(%{"retain" => _}), do: true
   def retain?(_), do: false
 
-  def size(%{"insert" => text}) when is_bitstring(text) do
-    binary_size =
-      text
-      |> :unicode.characters_to_binary(:utf8, :utf16)
-      |> byte_size()
+  def text_size(text) do
+    text
+    |> :unicode.characters_to_binary(:utf8, :utf16)
+    |> byte_size()
+    |> div(2)
+  end
 
-    round(binary_size / 2)
+  def size(%{"insert" => text}) when is_bitstring(text) do
+    text_size(text)
   end
 
   def size(%{"insert" => _}), do: 1
