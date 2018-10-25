@@ -52,8 +52,6 @@ defmodule Slab.Tandem.Op do
   def size(%{"retain" => len}), do: len
   def size(%{"delete" => len}), do: len
 
-  def take(op, 0), do: {false, op}
-
   def take(op = %{"insert" => embed}, _length) when not is_bitstring(embed) do
     {op, false}
   end

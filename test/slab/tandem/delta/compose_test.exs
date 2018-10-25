@@ -203,4 +203,28 @@ defmodule Slab.TandemTest.Delta.Compose do
 
     assert(Delta.compose(a, b) == [%{"insert" => "Hello World!"}])
   end
+
+  test "retain at boundary" do
+    a = [%{"insert" => "ab"}, %{"insert" => "cd"}]
+    b = [%{"retain" => 2}, %{"delete" => 1}]
+
+    assert(Delta.compose(a, b) == [%{"insert" => "abd"}])
+  end
+
+  test "non-compact" do
+    a = [
+      %{"insert" => ""},
+      %{"attributes" => %{"link" => "link"}, "insert" => "2"},
+      %{"insert" => "\n"}
+    ]
+
+    b = [%{"retain" => 1}, %{"delete" => 1}]
+
+    assert(
+      Delta.compose(a, b) == [
+        %{"insert" => ""},
+        %{"attributes" => %{"link" => "link"}, "insert" => "2"}
+      ]
+    )
+  end
 end
