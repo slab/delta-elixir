@@ -1,5 +1,4 @@
 defmodule Slab.Tandem.Op do
-  alias Slab.Logger
   alias Slab.Tandem.Attr
 
   def delete(length) do
@@ -141,8 +140,7 @@ defmodule Slab.Tandem.Op do
         {insert(left, op["attributes"]), insert(right, op["attributes"])}
 
       _ ->
-        Logger.error("Encoding failed in take_partial #{inspect({text, op, len, left, right})}")
-        raise "Encoding fail!"
+        raise "Encoding failed in take_partial #{inspect({text, op, len, left, right})}"
     end
   end
 
