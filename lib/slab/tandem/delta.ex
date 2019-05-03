@@ -9,6 +9,12 @@ defmodule Slab.Tandem.Delta do
     Enum.reduce(deltas, [], &compose(&2, &1))
   end
 
+  def compact(delta) do
+    delta
+    |> Enum.reduce([], &push(&2, &1))
+    |> Enum.reverse()
+  end
+
   def concat(left, []), do: left
   def concat([], right), do: right
 
@@ -25,11 +31,7 @@ defmodule Slab.Tandem.Delta do
   def push(delta, false), do: delta
 
   def push([], op) do
-    case op do
-      %{"retain" => 0} -> []
-      %{"delete" => 0} -> []
-      _ -> [op]
-    end
+    if Op.size(op) > 0, do: [op], else: []
   end
 
   # Adds op to the beginning of delta (we expect a reverse)
@@ -135,12 +137,12 @@ defmodule Slab.Tandem.Delta do
   end
 
   defp do_push(op, %{"delete" => 0}), do: op
+  defp do_push(op, %{"insert" => ""}), do: op
+  defp do_push(op, %{"retain" => 0}), do: op
 
   defp do_push(%{"delete" => left}, %{"delete" => right}) do
     Op.delete(left + right)
   end
-
-  defp do_push(op, %{"retain" => 0}), do: op
 
   defp do_push(%{"retain" => left, "attributes" => attr}, %{
          "retain" => right,

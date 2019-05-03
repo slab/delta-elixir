@@ -222,7 +222,6 @@ defmodule Slab.TandemTest.Delta.Compose do
 
     assert(
       Delta.compose(a, b) == [
-        %{"insert" => ""},
         %{"attributes" => %{"link" => "link"}, "insert" => "2"}
       ]
     )
