@@ -1,7 +1,7 @@
 defmodule Slab.TandemTest.Delta.Transform do
   use ExUnit.Case
 
-  alias Slab.Tandem.{Delta}
+  alias Slab.Tandem.Delta
 
   test "insert + insert" do
     a = [%{"insert" => "A"}]

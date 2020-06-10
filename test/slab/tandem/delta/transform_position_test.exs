@@ -1,7 +1,7 @@
 defmodule Slab.TandemTest.Delta.TransformPosition do
   use ExUnit.Case
 
-  alias Slab.Tandem.{Delta}
+  alias Slab.Tandem.Delta
 
   test "insert before position" do
     delta = [%{"insert" => "A"}]
