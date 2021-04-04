@@ -126,8 +126,8 @@ defmodule Slab.Tandem.Delta do
 
         true ->
           {composed, op1, op2} = Op.compose(op1, op2)
-          delta1 = delta1 |> push(op1)
-          delta2 = delta2 |> push(op2)
+          delta1 = push(delta1, op1)
+          delta2 = push(delta2, op2)
           {composed, delta1, delta2}
       end
 
@@ -237,8 +237,8 @@ defmodule Slab.Tandem.Delta do
 
         true ->
           {transformed, op1, op2} = Op.transform(op1, op2, priority)
-          delta1 = delta1 |> push(op1)
-          delta2 = delta2 |> push(op2)
+          delta1 = push(delta1, op1)
+          delta2 = push(delta2, op2)
           {transformed, delta1, delta2}
       end
 

@@ -38,7 +38,7 @@ defmodule Slab.Tandem.Attr do
       |> Map.keys()
       |> Enum.filter(fn k -> is_nil(merged[k]) end)
 
-    merged |> Map.drop(keys)
+    Map.drop(merged, keys)
   end
 
   defp merge(a, b, true) do
