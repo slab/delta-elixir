@@ -1,5 +1,6 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.Op
+  alias Slab.Tandem.Delta.Table
 
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
@@ -8,6 +9,43 @@ defmodule Slab.Tandem.Delta do
   def compose_all(deltas) do
     Enum.reduce(deltas, [], &compose(&2, &1))
   end
+
+  defp do_compose(result, [], []), do: result
+
+  defp do_compose(result, [], [op | delta]) do
+    Enum.reverse(delta) ++ push(result, op)
+  end
+
+  defp do_compose(result, [op | delta], []) do
+    Enum.reverse(delta) ++ push(result, op)
+  end
+
+  defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
+    {op, delta1, delta2} =
+      cond do
+        Table.op?(op1) or Table.op?(op2) ->
+          {Table.compose(op1, op2), delta1, delta2}
+
+        Op.insert?(op2) ->
+          {op2, [op1 | delta1], delta2}
+
+        Op.delete?(op1) ->
+          {op1, delta1, [op2 | delta2]}
+
+        true ->
+          {composed, op1, op2} = Op.compose(op1, op2)
+          delta1 = push(delta1, op1)
+          delta2 = push(delta2, op2)
+          {composed, delta1, delta2}
+      end
+
+    result
+    |> push(op)
+    |> do_compose(delta1, delta2)
+  end
+
+  defp chop([%{"retain" => _} = op | delta]) when map_size(op) == 1, do: delta
+  defp chop(delta), do: delta
 
   def compact(delta) do
     delta
@@ -46,96 +84,6 @@ defmodule Slab.Tandem.Delta do
     end
   end
 
-  def size(delta) do
-    Enum.reduce(delta, 0, fn op, sum ->
-      sum + Op.size(op)
-    end)
-  end
-
-  def slice(delta, index, len) do
-    {_left, right} = split(delta, index)
-    {middle, _rest} = split(right, len)
-    middle
-  end
-
-  def split(delta, index) when is_integer(index) do
-    do_split(
-      [],
-      delta,
-      fn op, index ->
-        op_size = Op.size(op)
-
-        if index <= op_size do
-          index
-        else
-          {:cont, index - op_size}
-        end
-      end,
-      index
-    )
-  end
-
-  def split(delta, func) when is_function(func) do
-    do_split([], delta, func)
-  end
-
-  def text(delta, embed \\ "|") do
-    delta
-    |> Enum.map(fn(op) ->
-        case op do
-          %{"insert" => text} when is_bitstring(text) -> text
-          %{"insert" => _} -> embed
-          _ -> ""
-        end
-      end)
-    |> Enum.join("")
-  end
-
-  def transform(_, _, priority \\ false)
-
-  def transform(index, delta, priority) when is_integer(index) do
-    do_transform(0, index, delta, priority)
-  end
-
-  def transform(left, right, priority) do
-    delta = do_transform([], left, right, priority)
-    delta |> chop() |> Enum.reverse()
-  end
-
-  defp chop([%{"retain" => _} = op | delta]) when map_size(op) == 1, do: delta
-  defp chop(delta), do: delta
-
-  defp do_compose(result, [], []), do: result
-
-  defp do_compose(result, [], [op | delta]) do
-    Enum.reverse(delta) ++ push(result, op)
-  end
-
-  defp do_compose(result, [op | delta], []) do
-    Enum.reverse(delta) ++ push(result, op)
-  end
-
-  defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
-    {op, delta1, delta2} =
-      cond do
-        Op.insert?(op2) ->
-          {op2, [op1 | delta1], delta2}
-
-        Op.delete?(op1) ->
-          {op1, delta1, [op2 | delta2]}
-
-        true ->
-          {composed, op1, op2} = Op.compose(op1, op2)
-          delta1 = push(delta1, op1)
-          delta2 = push(delta2, op2)
-          {composed, delta1, delta2}
-      end
-
-    result
-    |> push(op)
-    |> do_compose(delta1, delta2)
-  end
-
   defp do_push(op, %{"delete" => 0}), do: op
   defp do_push(op, %{"insert" => ""}), do: op
   defp do_push(op, %{"retain" => 0}), do: op
@@ -172,6 +120,39 @@ defmodule Slab.Tandem.Delta do
 
   defp do_push(_, _), do: nil
 
+  def size(delta) do
+    Enum.reduce(delta, 0, fn op, sum ->
+      sum + Op.size(op)
+    end)
+  end
+
+  def slice(delta, index, len) do
+    {_left, right} = split(delta, index)
+    {middle, _rest} = split(right, len)
+    middle
+  end
+
+  def split(delta, index) when is_integer(index) do
+    do_split(
+      [],
+      delta,
+      fn op, index ->
+        op_size = Op.size(op)
+
+        if index <= op_size do
+          index
+        else
+          {:cont, index - op_size}
+        end
+      end,
+      index
+    )
+  end
+
+  def split(delta, func) when is_function(func) do
+    do_split([], delta, func)
+  end
+
   defp do_split(passed, remaining, func, context \\ nil)
   defp do_split(passed, [], _, _), do: {passed, []}
 
@@ -201,6 +182,17 @@ defmodule Slab.Tandem.Delta do
             {Enum.reverse([left | passed]), [right | remaining]}
         end
     end
+  end
+
+  def transform(_, _, priority \\ false)
+
+  def transform(index, delta, priority) when is_integer(index) do
+    do_transform(0, index, delta, priority)
+  end
+
+  def transform(left, right, priority) do
+    delta = do_transform([], left, right, priority)
+    delta |> chop() |> Enum.reverse()
   end
 
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
