@@ -30,6 +30,27 @@ defmodule Slab.Tandem.Attr do
     end
   end
 
+  def invert(attr, base) do
+    attr = attr || %{}
+    base = base || %{}
+
+    inverted =
+      Enum.reduce(base, %{}, fn {key, value}, inverted ->
+        case attr do
+          %{^key => v} when v != value -> Map.put(inverted, key, value)
+          _other -> inverted
+        end
+      end)
+
+    Enum.reduce(attr, inverted, fn {key, value}, inverted ->
+      if Map.has_key?(base, key) || is_nil(value) do
+        inverted
+      else
+        Map.put(inverted, key, nil)
+      end
+    end)
+  end
+
   defp merge(a, b, false) do
     merged = Map.merge(a, b)
 

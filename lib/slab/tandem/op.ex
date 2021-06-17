@@ -29,6 +29,9 @@ defmodule Slab.Tandem.Op do
     %{"retain" => length}
   end
 
+  def has_attribute?(%{"attributes" => %{}}), do: true
+  def has_attribute?(_), do: false
+
   def delete?(%{"delete" => _}), do: true
   def delete?(_), do: false
   def insert?(%{"insert" => _}), do: true

@@ -1,6 +1,6 @@
 defmodule Slab.Tandem.Delta do
-  alias Slab.Tandem.Op
-  alias Slab.Tandem.Delta.Table
+  alias Slab.Tandem.{Attr, Op}
+  # alias Slab.Tandem.Delta.Table
 
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
@@ -13,18 +13,18 @@ defmodule Slab.Tandem.Delta do
   defp do_compose(result, [], []), do: result
 
   defp do_compose(result, [], [op | delta]) do
-    Enum.reverse(delta) ++ push(result, op)
+    Enum.reverse(delta, push(result, op))
   end
 
   defp do_compose(result, [op | delta], []) do
-    Enum.reverse(delta) ++ push(result, op)
+    Enum.reverse(delta, push(result, op))
   end
 
   defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
     {op, delta1, delta2} =
       cond do
-        Table.op?(op1) or Table.op?(op2) ->
-          {Table.compose(op1, op2), delta1, delta2}
+        # Table.op?(op1) or Table.op?(op2) ->
+        #   {Table.compose(op1, op2), delta1, delta2}
 
         Op.insert?(op2) ->
           {op2, [op1 | delta1], delta2}
@@ -73,6 +73,7 @@ defmodule Slab.Tandem.Delta do
   end
 
   # Adds op to the beginning of delta (we expect a reverse)
+  # TODO: Handle inserts after delete (should move insert before delete)
   def push(delta, op) do
     [last_op | partial_delta] = delta
     merged_op = do_push(last_op, op)
@@ -131,6 +132,8 @@ defmodule Slab.Tandem.Delta do
     {middle, _rest} = split(right, len)
     middle
   end
+
+  def split(delta, 0), do: {[], delta}
 
   def split(delta, index) when is_integer(index) do
     do_split(
@@ -237,5 +240,51 @@ defmodule Slab.Tandem.Delta do
     result
     |> push(op)
     |> do_transform(delta1, delta2, priority)
+  end
+
+  def invert(change, base) do
+    change
+    |> Enum.reduce({[], 0}, fn op, {inverted, base_index} ->
+      length = Op.size(op)
+
+      cond do
+        Op.insert?(op) ->
+          inverted = push(inverted, Op.delete(length))
+          {inverted, base_index}
+
+        Op.retain?(op) && !Op.has_attribute?(op) ->
+          inverted = push(inverted, Op.retain(length))
+          {inverted, base_index + length}
+
+        Op.retain?(op) || Op.delete?(op) ->
+          inverted =
+            base
+            |> slice(base_index, length)
+            |> Enum.reduce(inverted, &do_invert_slice(op, &1, &2))
+
+          {inverted, base_index + length}
+
+        true ->
+          {inverted, base_index}
+      end
+    end)
+    |> elem(0)
+    |> chop()
+    |> Enum.reverse()
+  end
+
+  defp do_invert_slice(op, base_op, inverted) do
+    cond do
+      Op.delete?(op) ->
+        push(inverted, base_op)
+
+      Op.retain?(op) && Op.has_attribute?(op) ->
+        attrs = Attr.invert(op["attributes"], base_op["attributes"])
+        retain_op = base_op |> Op.size() |> Op.retain(attrs)
+        push(inverted, retain_op)
+
+      true ->
+        inverted
+    end
   end
 end
