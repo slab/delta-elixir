@@ -1,6 +1,6 @@
 defmodule Slab.Tandem.Delta do
   alias Slab.Tandem.{Attr, Op}
-  # alias Slab.Tandem.Delta.Table
+  alias Slab.Tandem.TableEmbed
 
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
@@ -23,8 +23,8 @@ defmodule Slab.Tandem.Delta do
   defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
     {op, delta1, delta2} =
       cond do
-        # Table.op?(op1) or Table.op?(op2) ->
-        #   {Table.compose(op1, op2), delta1, delta2}
+        TableEmbed.op?(op1) or TableEmbed.op?(op2) ->
+          {TableEmbed.compose(op1, op2), delta1, delta2}
 
         Op.insert?(op2) ->
           {op2, [op1 | delta1], delta2}
@@ -224,6 +224,9 @@ defmodule Slab.Tandem.Delta do
   defp do_transform(result, [op1 | delta1], [op2 | delta2], priority) do
     {op, delta1, delta2} =
       cond do
+        # TableEmbed.op?(op1) and TableEmbed.op?(op2) ->
+        #   {TableEmbed.transform(op1, op2, priority), delta1, [op2, delta2]}
+
         Op.insert?(op1) and (priority or not Op.insert?(op2)) ->
           {Op.retain(op1), delta1, [op2 | delta2]}
 
@@ -248,6 +251,9 @@ defmodule Slab.Tandem.Delta do
       length = Op.size(op)
 
       cond do
+        # TableEmbed.op?(op) ->
+        # ???
+
         Op.insert?(op) ->
           inverted = push(inverted, Op.delete(length))
           {inverted, base_index}
