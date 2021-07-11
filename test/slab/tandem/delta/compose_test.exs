@@ -1,229 +1,321 @@
-defmodule Slab.TandemTest.Delta.Compose do
+defmodule Slab.Tandem.Delta.ComposeTest do
   use ExUnit.Case
 
-  alias Slab.Tandem.Delta
+  alias Slab.Config
+  alias Slab.Tandem.{Delta, Op}
 
-  test "insert + insert plain" do
-    a = [%{"insert" => "A"}]
-    b = [%{"insert" => "B"}]
-    assert(Delta.compose(a, b) == [%{"insert" => "BA"}])
-  end
+  describe ".compose/3 (basic)" do
+    test "insert + insert" do
+      a = [Op.insert("A")]
+      b = [Op.insert("B")]
+      expected = [Op.insert("BA")]
 
-  test "insert + insert with attributes" do
-    a = [%{"insert" => "A", "attributes" => %{bold: true}}]
-    b = [%{"insert" => "B", "attributes" => %{bold: true}}]
+      assert Delta.compose(a, b) == expected
+    end
 
-    assert(
-      Delta.compose(a, b) == [
-        %{
-          "insert" => "BA",
-          "attributes" => %{bold: true}
-        }
+    test "insert + insert (with attributes)" do
+      a = [Op.insert("A", %{"bold" => true})]
+      b = [Op.insert("B", %{"bold" => true})]
+      expected = [Op.insert("BA", %{"bold" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "insert + retain" do
+      a = [Op.insert("A")]
+      b = [Op.retain(1, %{"bold" => true, "color" => "red", "font" => nil})]
+      expected = [Op.insert("A", %{"bold" => true, "color" => "red"})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "insert + delete" do
+      a = [Op.insert("A")]
+      b = [Op.delete(1)]
+      expected = []
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete + insert" do
+      a = [Op.delete(1)]
+      b = [Op.insert("B")]
+      expected = [Op.insert("B"), Op.delete(1)]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete + retain" do
+      a = [Op.delete(1)]
+      b = [Op.retain(1, %{"bold" => true, "color" => "red"})]
+      expected = [Op.delete(1), Op.retain(1, %{"bold" => true, "color" => "red"})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete + delete" do
+      a = [Op.delete(1)]
+      b = [Op.delete(1)]
+      expected = [Op.delete(2)]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain + insert" do
+      a = [Op.retain(1, %{"color" => "blue"})]
+      b = [Op.insert("B")]
+      expected = [Op.insert("B"), Op.retain(1, %{"color" => "blue"})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain + retain (plain)" do
+      a = b = [Op.retain(1)]
+      assert Delta.compose(a, b) == []
+    end
+
+    test "retain + retain (with attributes)" do
+      a = [Op.retain(1, %{"color" => "blue"})]
+      b = [Op.retain(1, %{"bold" => true, "color" => "red", "font" => nil})]
+      expected = [Op.retain(1, %{"bold" => true, "color" => "red", "font" => nil})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain + delete" do
+      a = [Op.retain(1, %{"color" => "blue"})]
+      b = [Op.delete(1)]
+      expected = [Op.delete(1)]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "insert in middle of text" do
+      a = [Op.insert("Hello")]
+      b = [Op.retain(3), Op.insert("X")]
+      expected = [Op.insert("HelXlo")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "insert/delete ordering" do
+      base = [Op.insert("Hello")]
+      insert_first = [Op.retain(3), Op.insert("X"), Op.delete(1)]
+      delete_first = [Op.retain(3), Op.delete(1), Op.insert("X")]
+      expected = [Op.insert("HelXo")]
+
+      assert Delta.compose(base, insert_first) == expected
+      assert Delta.compose(base, delete_first) == expected
+    end
+
+    test "insert embed" do
+      a = [Op.insert(%{"image" => "image.png"}, %{"width" => "300"})]
+      b = [Op.retain(1, %{"height" => "200"})]
+      expected = [Op.insert(%{"image" => "image.png"}, %{"width" => "300", "height" => "200"})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete entire text" do
+      a = [Op.retain(4), Op.insert("Hello")]
+      b = [Op.delete(9)]
+      expected = [Op.delete(4)]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain more than length of text" do
+      a = [Op.insert("Hello")]
+      b = [Op.retain(10)]
+      expected = [Op.insert("Hello")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain empty embed" do
+      a = [Op.insert(%{})]
+      b = [Op.retain(1)]
+
+      assert Delta.compose(a, b) == a
+    end
+
+    test "remove all attributes" do
+      a = [Op.insert("A", %{"bold" => true})]
+      b = [Op.retain(1, %{"bold" => nil})]
+      expected = [Op.insert("A")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "remove all embed attributes" do
+      a = [Op.insert(2, %{"bold" => true})]
+      b = [Op.retain(1, %{"bold" => nil})]
+      expected = [Op.insert(2)]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain start optimization" do
+      a = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true}),
+        Op.delete(1)
       ]
-    )
-  end
 
-  test "insert + retain" do
-    a = [%{"insert" => "A"}]
-
-    b = [
-      %{
-        "retain" => 1,
-        "attributes" => %{
-          bold: true,
-          color: "red",
-          font: nil
-        }
-      }
-    ]
-
-    assert(
-      Delta.compose(a, b) == [
-        %{
-          "insert" => "A",
-          "attributes" => %{
-            bold: true,
-            color: "red"
-          }
-        }
+      b = [
+        Op.retain(3),
+        Op.insert("D")
       ]
-    )
-  end
 
-  test "insert + delete" do
-    a = [%{"insert" => "A"}]
-    b = [%{"delete" => 1}]
-    assert(Delta.compose(a, b) == [])
-  end
-
-  test "delete + insert" do
-    a = [%{"delete" => 1}]
-    b = [%{"insert" => "B"}]
-    assert(Delta.compose(a, b) == b ++ a)
-  end
-
-  test "delete + retain" do
-    a = [%{"delete" => 1}]
-    b = [%{"retain" => 1, "attributes" => %{bold: true, color: "red"}}]
-    assert(Delta.compose(a, b) == a ++ b)
-  end
-
-  test "delete + delete" do
-    a = [%{"delete" => 1}]
-    b = [%{"delete" => 1}]
-    assert(Delta.compose(a, b) == [%{"delete" => 2}])
-  end
-
-  test "retain + insert" do
-    a = [%{"retain" => 1, "attributes" => %{color: "blue"}}]
-    b = [%{"insert" => "B"}]
-    assert(Delta.compose(a, b) == b ++ a)
-  end
-
-  test "retain + retain plain" do
-    a = [%{"retain" => 1}]
-    b = [%{"retain" => 1}]
-    assert(Delta.compose(a, b) == [])
-  end
-
-  test "retain + retain" do
-    a = [%{"retain" => 1, "attributes" => %{color: "blue", italic: true}}]
-
-    b = [
-      %{
-        "retain" => 1,
-        "attributes" => %{
-          bold: true,
-          color: "red",
-          font: nil
-        }
-      }
-    ]
-
-    assert(
-      Delta.compose(a, b) == [
-        %{
-          "retain" => 1,
-          "attributes" => %{
-            bold: true,
-            color: "red",
-            italic: true,
-            font: nil
-          }
-        }
+      expected = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true}),
+        Op.insert("D"),
+        Op.delete(1)
       ]
-    )
-  end
 
-  test "retain + delete" do
-    a = [%{"retain" => 1, "attributes" => %{color: "blue"}}]
-    b = [%{"delete" => 1}]
-    assert(Delta.compose(a, b) == b)
-  end
+      assert Delta.compose(a, b) == expected
+    end
 
-  test "insert in middle of text" do
-    a = [%{"insert" => "Hello"}]
-    b = [%{"retain" => 3}, %{"insert" => "X"}]
-    assert(Delta.compose(a, b) == [%{"insert" => "HelXlo"}])
-  end
-
-  test "insert and delete ordering" do
-    a = [%{"insert" => "Hello"}]
-    b_insert = [%{"retain" => 3}, %{"insert" => "X"}, %{"delete" => 1}]
-    b_delete = [%{"retain" => 3}, %{"delete" => 1}, %{"insert" => "X"}]
-    expected = [%{"insert" => "HelXo"}]
-    assert(Delta.compose(a, b_insert) == expected)
-    assert(Delta.compose(a, b_delete) == expected)
-  end
-
-  test "insert embed" do
-    a = [%{"insert" => %{image: "image.png"}, "attributes" => %{width: "300"}}]
-    b = [%{"retain" => 1, "attributes" => %{height: "200"}}]
-
-    assert(
-      Delta.compose(a, b) == [
-        %{
-          "insert" => %{image: "image.png"},
-          "attributes" => %{
-            height: "200",
-            width: "300"
-          }
-        }
+    test "retain start optimization split" do
+      a = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true}),
+        Op.retain(5),
+        Op.delete(1)
       ]
-    )
-  end
 
-  test "delete entire text" do
-    a = [%{"retain" => 4}, %{"insert" => "Hello"}]
-    b = [%{"delete" => 9}]
-    assert(Delta.compose(a, b) == [%{"delete" => 4}])
-  end
-
-  test "retain more than length of text" do
-    a = [%{"insert" => "Hello"}]
-    b = [%{"retain" => 10}]
-    assert(Delta.compose(a, b) == a)
-  end
-
-  test "retain empty embed" do
-    a = [%{"insert" => %{}}]
-    b = [%{"retain" => 1}]
-    assert(Delta.compose(a, b) == a)
-  end
-
-  test "remove all attributes" do
-    a = [%{"insert" => "A", "attributes" => %{bold: true}}]
-    b = [%{"retain" => 1, "attributes" => %{bold: nil}}]
-    assert(Delta.compose(a, b) == [%{"insert" => "A"}])
-  end
-
-  test "remove all embed attributes" do
-    a = [%{"insert" => %{}, "attributes" => %{bold: true}}]
-    b = [%{"retain" => 1, "attributes" => %{bold: nil}}]
-    assert(Delta.compose(a, b) == [%{"insert" => %{}}])
-  end
-
-  test "long composition" do
-    a = [%{"insert" => "HloWrd"}]
-
-    b = [
-      %{"retain" => 1},
-      %{"insert" => "e"},
-      %{"retain" => 1},
-      %{"insert" => "l"},
-      %{"retain" => 1},
-      %{"insert" => " "},
-      %{"retain" => 1},
-      %{"insert" => "o"},
-      %{"retain" => 1},
-      %{"insert" => "l"},
-      %{"retain" => 1},
-      %{"insert" => "!"}
-    ]
-
-    assert(Delta.compose(a, b) == [%{"insert" => "Hello World!"}])
-  end
-
-  test "retain at boundary" do
-    a = [%{"insert" => "ab"}, %{"insert" => "cd"}]
-    b = [%{"retain" => 2}, %{"delete" => 1}]
-
-    assert(Delta.compose(a, b) == [%{"insert" => "abd"}])
-  end
-
-  test "non-compact" do
-    a = [
-      %{"insert" => ""},
-      %{"attributes" => %{"link" => "link"}, "insert" => "2"},
-      %{"insert" => "\n"}
-    ]
-
-    b = [%{"retain" => 1}, %{"delete" => 1}]
-
-    assert(
-      Delta.compose(a, b) == [
-        %{"attributes" => %{"link" => "link"}, "insert" => "2"}
+      b = [
+        Op.retain(4),
+        Op.insert("D")
       ]
-    )
+
+      expected = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true}),
+        Op.retain(1),
+        Op.insert("D"),
+        Op.retain(4),
+        Op.delete(1)
+      ]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain end optimization" do
+      a = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true})
+      ]
+
+      b = [Op.delete(1)]
+      expected = [Op.insert("B"), Op.insert("C", %{"bold" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain end optimization join" do
+      a = [
+        Op.insert("A", %{"bold" => true}),
+        Op.insert("B"),
+        Op.insert("C", %{"bold" => true}),
+        Op.insert("D"),
+        Op.insert("E", %{"bold" => true}),
+        Op.insert("F")
+      ]
+
+      b = [
+        Op.retain(1),
+        Op.delete(1)
+      ]
+
+      expected = [
+        Op.insert("AC", %{"bold" => true}),
+        Op.insert("D"),
+        Op.insert("E", %{"bold" => true}),
+        Op.insert("F")
+      ]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain at boundary" do
+      a = [Op.insert("ab"), Op.insert("cd")]
+      b = [Op.retain(2), Op.delete(1)]
+      expected = [Op.insert("abd")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "non-compact" do
+      a = [
+        Op.insert(""),
+        Op.insert("2", %{"link" => "link"}),
+        Op.insert("\n")
+      ]
+
+      b = [Op.retain(1), Op.delete(1)]
+      expected = [Op.insert("2", %{"link" => "link"})]
+
+      assert Delta.compose(a, b) == expected
+    end
+  end
+
+  describe ".compose/3 (custom embeds)" do
+    defmodule TestDeltaEmbed do
+      @behaviour Slab.Tandem.EmbedHandler
+
+      @impl true
+      def name, do: "delta"
+
+      @impl true
+      def compose(a, b, _keep_nil), do: Delta.compose(a, b)
+
+      @impl true
+      def transform(a, b, _priority), do: Delta.transform(a, b)
+
+      @impl true
+      defdelegate invert(a, b), to: Delta
+    end
+
+    setup do
+      embeds = Config.get(:delta, :custom_embeds, [])
+      Application.put_env(:slab, :delta, custom_embeds: [TestDeltaEmbed])
+
+      on_exit(fn -> Application.put_env(:slab, :delta, custom_embeds: embeds) end)
+    end
+
+    test "retain an embed with a number" do
+      a = [Op.insert(%{"delta" => [Op.insert("a")]})]
+      b = [Op.retain(1, %{"bold" => true})]
+      expected = [Op.insert(%{"delta" => [Op.insert("a")]}, %{"bold" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain a number with an embed" do
+      a = [Op.retain(10, %{"bold" => true})]
+      b = [Op.retain(%{"delta" => [Op.insert("b")]})]
+
+      expected = [
+        Op.retain(%{"delta" => [Op.insert("b")]}, %{"bold" => true}),
+        Op.retain(9, %{"bold" => true})
+      ]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain an embed with an embed" do
+      a = [Op.retain(%{"delta" => [Op.insert("a")]})]
+      b = [Op.retain(%{"delta" => [Op.insert("b")]})]
+      expected = [Op.retain(%{"delta" => [Op.insert("ba")]})]
+
+      assert Delta.compose(a, b) == expected
+    end
   end
 end
