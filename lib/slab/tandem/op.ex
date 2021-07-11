@@ -1,33 +1,22 @@
 defmodule Slab.Tandem.Op do
-  alias Slab.Tandem.Attr
+  alias Slab.Tandem.{Attr, Delta}
 
-  def delete(length) do
-    %{"delete" => length}
+  def new(action, value, attr \\ false)
+  def new("delete", length, _attr), do: %{"delete" => length}
+
+  def new(action, value, %{} = attr) when map_size(attr) > 0 do
+    %{action => value, "attributes" => attr}
   end
 
-  def insert(ins, attr \\ false)
+  def new(action, value, _attr), do: %{action => value}
 
-  def insert(ins, attr = %{}) when map_size(attr) > 0 do
-    %{"insert" => ins, "attributes" => attr}
-  end
+  def insert(value, attr \\ false), do: new("insert", value, attr)
+  def retain(value, attr \\ false), do: new("retain", value, attr)
+  def delete(value), do: new("delete", value)
 
-  def insert(ins, _) do
-    %{"insert" => ins}
-  end
-
-  def retain(length, attr \\ false)
-
-  def retain(op, attr) when is_map(op) do
-    op |> size() |> retain(attr)
-  end
-
-  def retain(length, %{} = attr) when map_size(attr) > 0 do
-    %{"retain" => length, "attributes" => attr}
-  end
-
-  def retain(length, _) do
-    %{"retain" => length}
-  end
+  # def retain(op, attr) when is_map(op) do
+  #   op |> size() |> retain(attr)
+  # end
 
   def has_attribute?(%{"attributes" => %{}}), do: true
   def has_attribute?(_), do: false
@@ -46,14 +35,10 @@ defmodule Slab.Tandem.Op do
     |> div(2)
   end
 
-  def size(%{"insert" => text}) when is_bitstring(text) do
-    text_size(text)
-  end
-
-  def size(%{"insert" => _}), do: 1
-  def size(%{"retain" => len}) when is_integer(len), do: len
-  def size(%{"retain" => _}), do: 1
+  def size(%{"insert" => text}) when is_binary(text), do: text_size(text)
   def size(%{"delete" => len}) when is_integer(len), do: len
+  def size(%{"retain" => len}) when is_integer(len), do: len
+  def size(_op), do: 1
 
   def take(op = %{"insert" => embed}, _length) when not is_bitstring(embed) do
     {op, false}
@@ -70,24 +55,72 @@ defmodule Slab.Tandem.Op do
     {op1, a, op2, b} = next(a, b)
 
     composed =
-      cond do
-        retain?(op1) and retain?(op2) ->
+      case {info(op1), info(op2)} do
+        # Return second "delete" op as-is when composing a
+        # basic retain with a basic delete
+        {{"retain", :number}, {"delete", :number}} ->
+          # OLD
+          op2
+
+        # Return second op with composed attributes when composing
+        # a basic retain with another (basic or embed) retain
+        {{"retain", :number}, {"retain", _type}} ->
+          # A
           attr = Attr.compose(op1["attributes"], op2["attributes"], true)
+          retain(op2["retain"], attr)
+
+        {{"retain", :map}, {"retain", :number}} ->
+          # B
+          attr = Attr.compose(op1["attributes"], op2["attributes"])
           retain(op1["retain"], attr)
 
-        insert?(op1) and retain?(op2) ->
+        {{"insert", _type}, {"retain", :number}} ->
+          # C
           attr = Attr.compose(op1["attributes"], op2["attributes"])
           insert(op1["insert"], attr)
 
-        retain?(op1) and delete?(op2) ->
-          op2
+        {{action, type}, {"retain", :map}} ->
+          # D
+          {embed_type, embed1, embed2} = get_embed_data!(op1[action], op2["retain"])
+          handler = Delta.get_handler!(embed_type)
 
-        true ->
+          composed_embed = %{embed_type => handler.compose(embed1, embed2, action == "retain")}
+          keep_nil? = action == :retain && type == :number
+          attr = Attr.compose(op1["attributes"], op2["attributes"], keep_nil?)
+
+          new(action, composed_embed, attr)
+
+        _other ->
           false
       end
 
     {composed, a, b}
   end
+
+  # def compose(a, b) do
+  #   retain?(op2) ->
+  #     retain?(op1) and is_num(op1) -> # {"retain", :number}, {"retain", _}
+  #       # A: composed.retain = op2.retain
+
+  #     else ->
+  #       is_num(op2) -> # already retain
+  #         retain?(op1) -> # op1 is_map # {"retain", :map}, {"retain", :number}
+  #           # B: composed.retain = op1.retain
+
+  #         !retain?(op1) -> # {"insert", _}, {"retain", :number}
+  #           # C: composed.insert = op1.insert
+
+  #       is_map(op2) -> # already retain # {action, _}, {"retain", :map}
+  #         # D:
+  #         # composed[action] = %{embed_type => composed_embed}
+
+  #   delete?(op2) and is_num(op2) and retain?(op1) and is_num(op1) ->
+  #   # OLD: delete?(op2) and retain?(op1) ->
+  #     op2
+
+  #   true ->
+  #     false
+  # end
 
   def transform(offset, index, op, priority) when is_integer(index) do
     length = size(op)
@@ -154,5 +187,40 @@ defmodule Slab.Tandem.Op do
 
   defp take_partial(%{"retain" => full} = op, length) do
     {retain(length, op["attributes"]), retain(full - length, op["attributes"])}
+  end
+
+  defp get_embed_data!(a, b) do
+    cond do
+      !is_map(a) ->
+        raise("cannot retain #{inspect(a)}")
+
+      !is_map(b) ->
+        raise("cannot retain #{inspect(b)}")
+
+      map_size(a) != 1 && Map.keys(a) != Map.keys(b) ->
+        raise("embeds not matched: #{inspect(a: a, b: b)}")
+
+      true ->
+        [type] = Map.keys(a)
+        {type, a[type], b[type]}
+    end
+  end
+
+  defp info(op) do
+    action =
+      case op do
+        %{"insert" => _} -> "insert"
+        %{"retain" => _} -> "retain"
+        %{"delete" => _} -> "delete"
+      end
+
+    type =
+      case op[action] do
+        value when is_integer(value) -> :number
+        value when is_binary(value) -> :string
+        value when is_map(value) -> :map
+      end
+
+    {action, type}
   end
 end

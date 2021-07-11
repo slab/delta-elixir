@@ -1,6 +1,16 @@
 defmodule Slab.Tandem.Delta do
+  alias Slab.Config
   alias Slab.Tandem.{Attr, Op}
-  alias Slab.Tandem.TableEmbed
+
+  def get_handler!(embed_type) do
+    :delta
+    |> Config.get(:custom_embeds, [])
+    |> Enum.find(&(&1.name == embed_type))
+    |> case do
+      nil -> raise("no embed handler configured for #{inspect(embed_type)}")
+      handler -> handler
+    end
+  end
 
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
@@ -23,9 +33,6 @@ defmodule Slab.Tandem.Delta do
   defp do_compose(result, [op1 | delta1], [op2 | delta2]) do
     {op, delta1, delta2} =
       cond do
-        TableEmbed.op?(op1) or TableEmbed.op?(op2) ->
-          {TableEmbed.compose(op1, op2), delta1, delta2}
-
         Op.insert?(op2) ->
           {op2, [op1 | delta1], delta2}
 
@@ -44,7 +51,7 @@ defmodule Slab.Tandem.Delta do
     |> do_compose(delta1, delta2)
   end
 
-  defp chop([%{"retain" => _} = op | delta]) when map_size(op) == 1, do: delta
+  defp chop([%{"retain" => n} = op | delta]) when is_number(n) and map_size(op) == 1, do: delta
   defp chop(delta), do: delta
 
   def compact(delta) do
@@ -96,12 +103,13 @@ defmodule Slab.Tandem.Delta do
   defp do_push(%{"retain" => left, "attributes" => attr}, %{
          "retain" => right,
          "attributes" => attr
-       }) do
+       }) when is_integer(left) and is_integer(right) do
     Op.retain(left + right, attr)
   end
 
   defp do_push(%{"retain" => left} = last_op, %{"retain" => right} = op)
-       when map_size(last_op) == 1 and map_size(op) == 1 do
+       when map_size(last_op) == 1 and map_size(op) == 1 and
+              is_integer(left) and is_integer(right) do
     Op.retain(left + right)
   end
 
