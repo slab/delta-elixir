@@ -1,7 +1,7 @@
 defmodule Slab.Tandem.Delta.ComposeTest do
   use ExUnit.Case
 
-  alias Slab.Config
+  alias Slab.{Config, TestDeltaEmbed}
   alias Slab.Tandem.{Delta, Op}
 
   describe ".compose/3 (basic)" do
@@ -267,26 +267,9 @@ defmodule Slab.Tandem.Delta.ComposeTest do
   end
 
   describe ".compose/3 (custom embeds)" do
-    defmodule TestDeltaEmbed do
-      @behaviour Slab.Tandem.EmbedHandler
-
-      @impl true
-      def name, do: "delta"
-
-      @impl true
-      def compose(a, b, _keep_nil), do: Delta.compose(a, b)
-
-      @impl true
-      def transform(a, b, _priority), do: Delta.transform(a, b)
-
-      @impl true
-      defdelegate invert(a, b), to: Delta
-    end
-
     setup do
       embeds = Config.get(:delta, :custom_embeds, [])
       Application.put_env(:slab, :delta, custom_embeds: [TestDeltaEmbed])
-
       on_exit(fn -> Application.put_env(:slab, :delta, custom_embeds: embeds) end)
     end
 

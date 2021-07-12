@@ -259,24 +259,33 @@ defmodule Slab.Tandem.Delta do
       length = Op.size(op)
 
       cond do
-        # TableEmbed.op?(op) ->
-        # ???
-
         Op.insert?(op) ->
           inverted = push(inverted, Op.delete(length))
           {inverted, base_index}
 
-        Op.retain?(op) && !Op.has_attribute?(op) ->
+        Op.retain?(op, :number) && !Op.has_attribute?(op) ->
           inverted = push(inverted, Op.retain(length))
           {inverted, base_index + length}
 
-        Op.retain?(op) || Op.delete?(op) ->
+        Op.retain?(op, :number) || Op.delete?(op) ->
           inverted =
             base
             |> slice(base_index, length)
             |> Enum.reduce(inverted, &do_invert_slice(op, &1, &2))
 
           {inverted, base_index + length}
+
+        # Delegate to the embed handler when change op is an embed
+        Op.retain?(op, :map) ->
+          base_op = hd(base)
+          {embed_type, embed1, embed2} = Op.get_embed_data!(op["retain"], base_op["insert"])
+          handler = get_handler!(embed_type)
+
+          embed = %{embed_type => handler.invert(embed1, embed2)}
+          attrs = Attr.invert(op["attributes"], base_op["attributes"])
+          inverted = push(inverted, Op.retain(embed, attrs))
+
+          {inverted, base_index}
 
         true ->
           {inverted, base_index}

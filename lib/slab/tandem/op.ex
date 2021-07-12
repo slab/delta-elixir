@@ -21,12 +21,16 @@ defmodule Slab.Tandem.Op do
   def has_attribute?(%{"attributes" => %{}}), do: true
   def has_attribute?(_), do: false
 
-  def delete?(%{"delete" => _}), do: true
-  def delete?(_), do: false
-  def insert?(%{"insert" => _}), do: true
-  def insert?(_), do: false
-  def retain?(%{"retain" => _}), do: true
-  def retain?(_), do: false
+  def type?(op, action, value_type \\ nil)
+  def type?(%{} = op, action, nil) when is_map_key(op, action), do: true
+  def type?(%{} = op, action, :map), do: is_map(op[action])
+  def type?(%{} = op, action, :string), do: is_binary(op[action])
+  def type?(%{} = op, action, :number), do: is_integer(op[action])
+  def type?(%{}, _action, _value_type), do: false
+
+  def insert?(op, type \\ nil), do: type?(op, "insert", type)
+  def delete?(op, type \\ nil), do: type?(op, "delete", type)
+  def retain?(op, type \\ nil), do: type?(op, "retain", type)
 
   def text_size(text) do
     text
@@ -48,6 +52,23 @@ defmodule Slab.Tandem.Op do
     case size(op) - length do
       0 -> {op, false}
       _ -> take_partial(op, length)
+    end
+  end
+
+  def get_embed_data!(a, b) do
+    cond do
+      !is_map(a) ->
+        raise("cannot retain #{inspect(a)}")
+
+      !is_map(b) ->
+        raise("cannot retain #{inspect(b)}")
+
+      map_size(a) != 1 && Map.keys(a) != Map.keys(b) ->
+        raise("embeds not matched: #{inspect(a: a, b: b)}")
+
+      true ->
+        [type] = Map.keys(a)
+        {type, a[type], b[type]}
     end
   end
 
@@ -187,23 +208,6 @@ defmodule Slab.Tandem.Op do
 
   defp take_partial(%{"retain" => full} = op, length) do
     {retain(length, op["attributes"]), retain(full - length, op["attributes"])}
-  end
-
-  defp get_embed_data!(a, b) do
-    cond do
-      !is_map(a) ->
-        raise("cannot retain #{inspect(a)}")
-
-      !is_map(b) ->
-        raise("cannot retain #{inspect(b)}")
-
-      map_size(a) != 1 && Map.keys(a) != Map.keys(b) ->
-        raise("embeds not matched: #{inspect(a: a, b: b)}")
-
-      true ->
-        [type] = Map.keys(a)
-        {type, a[type], b[type]}
-    end
   end
 
   defp info(op) do
