@@ -103,7 +103,8 @@ defmodule Slab.Tandem.Delta do
   defp do_push(%{"retain" => left, "attributes" => attr}, %{
          "retain" => right,
          "attributes" => attr
-       }) when is_integer(left) and is_integer(right) do
+       })
+       when is_integer(left) and is_integer(right) do
     Op.retain(left + right, attr)
   end
 
@@ -222,21 +223,18 @@ defmodule Slab.Tandem.Delta do
   defp do_transform(result, [], [], _), do: result
 
   defp do_transform(result, [], [op | delta], priority) do
-    do_transform(result, [Op.retain(op)], [op | delta], priority)
+    do_transform(result, [Op.retain(Op.size(op))], [op | delta], priority)
   end
 
   defp do_transform(result, [op | delta], [], priority) do
-    do_transform(result, [op | delta], [Op.retain(op)], priority)
+    do_transform(result, [op | delta], [Op.retain(Op.size(op))], priority)
   end
 
   defp do_transform(result, [op1 | delta1], [op2 | delta2], priority) do
     {op, delta1, delta2} =
       cond do
-        # TableEmbed.op?(op1) and TableEmbed.op?(op2) ->
-        #   {TableEmbed.transform(op1, op2, priority), delta1, [op2, delta2]}
-
         Op.insert?(op1) and (priority or not Op.insert?(op2)) ->
-          {Op.retain(op1), delta1, [op2 | delta2]}
+          {Op.retain(Op.size(op1)), delta1, [op2 | delta2]}
 
         Op.insert?(op2) ->
           {op2, [op1 | delta1], delta2}

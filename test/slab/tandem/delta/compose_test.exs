@@ -4,7 +4,7 @@ defmodule Slab.Tandem.Delta.ComposeTest do
   alias Slab.{Config, TestDeltaEmbed}
   alias Slab.Tandem.{Delta, Op}
 
-  describe ".compose/3 (basic)" do
+  describe ".compose/2 (basic)" do
     test "insert + insert" do
       a = [Op.insert("A")]
       b = [Op.insert("B")]
@@ -266,7 +266,7 @@ defmodule Slab.Tandem.Delta.ComposeTest do
     end
   end
 
-  describe ".compose/3 (custom embeds)" do
+  describe ".compose/2 (custom embeds)" do
     setup do
       embeds = Config.get(:delta, :custom_embeds, [])
       Application.put_env(:slab, :delta, custom_embeds: [TestDeltaEmbed])

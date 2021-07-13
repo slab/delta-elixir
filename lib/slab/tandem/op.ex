@@ -14,10 +14,6 @@ defmodule Slab.Tandem.Op do
   def retain(value, attr \\ false), do: new("retain", value, attr)
   def delete(value), do: new("delete", value)
 
-  # def retain(op, attr) when is_map(op) do
-  #   op |> size() |> retain(attr)
-  # end
-
   def has_attribute?(%{"attributes" => %{}}), do: true
   def has_attribute?(_), do: false
 
@@ -118,31 +114,6 @@ defmodule Slab.Tandem.Op do
     {composed, a, b}
   end
 
-  # def compose(a, b) do
-  #   retain?(op2) ->
-  #     retain?(op1) and is_num(op1) -> # {"retain", :number}, {"retain", _}
-  #       # A: composed.retain = op2.retain
-
-  #     else ->
-  #       is_num(op2) -> # already retain
-  #         retain?(op1) -> # op1 is_map # {"retain", :map}, {"retain", :number}
-  #           # B: composed.retain = op1.retain
-
-  #         !retain?(op1) -> # {"insert", _}, {"retain", :number}
-  #           # C: composed.insert = op1.insert
-
-  #       is_map(op2) -> # already retain # {action, _}, {"retain", :map}
-  #         # D:
-  #         # composed[action] = %{embed_type => composed_embed}
-
-  #   delete?(op2) and is_num(op2) and retain?(op1) and is_num(op1) ->
-  #   # OLD: delete?(op2) and retain?(op1) ->
-  #     op2
-
-  #   true ->
-  #     false
-  # end
-
   def transform(offset, index, op, priority) when is_integer(index) do
     length = size(op)
 
@@ -164,9 +135,20 @@ defmodule Slab.Tandem.Op do
         delete?(op2) ->
           op2
 
+        # Delegate to embed handler if both are retain ops are
+        # embeds of the same type
+        retain?(op1, :map) && retain?(op2, :map) &&
+            Map.keys(op1["retain"]) == Map.keys(op2["retain"]) ->
+          {embed_type, embed1, embed2} = get_embed_data!(op1["retain"], op2["retain"])
+          handler = Delta.get_handler!(embed_type)
+
+          embed = %{embed_type => handler.transform(embed1, embed2, priority)}
+          attrs = Attr.transform(op1["attributes"], op2["attributes"], priority)
+          retain(embed, attrs)
+
         true ->
-          attr = Attr.transform(op1["attributes"], op2["attributes"], priority)
-          retain(op1, attr)
+          attrs = Attr.transform(op1["attributes"], op2["attributes"], priority)
+          retain(size(op1), attrs)
       end
 
     {transformed, a, b}
