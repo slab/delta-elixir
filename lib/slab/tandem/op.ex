@@ -73,36 +73,27 @@ defmodule Slab.Tandem.Op do
 
     composed =
       case {info(op1), info(op2)} do
-        # Return second "delete" op as-is when composing a
-        # basic retain with a basic delete
         {{"retain", :number}, {"delete", :number}} ->
-          # OLD
           op2
 
-        # Return second op with composed attributes when composing
-        # a basic retain with another (basic or embed) retain
-        {{"retain", :number}, {"retain", _type}} ->
-          # A
-          attr = Attr.compose(op1["attributes"], op2["attributes"], true)
-          retain(op2["retain"], attr)
-
         {{"retain", :map}, {"retain", :number}} ->
-          # B
           attr = Attr.compose(op1["attributes"], op2["attributes"])
           retain(op1["retain"], attr)
 
+        {{"retain", :number}, {"retain", _type}} ->
+          attr = Attr.compose(op1["attributes"], op2["attributes"], true)
+          retain(op2["retain"], attr)
+
         {{"insert", _type}, {"retain", :number}} ->
-          # C
           attr = Attr.compose(op1["attributes"], op2["attributes"])
           insert(op1["insert"], attr)
 
         {{action, type}, {"retain", :map}} ->
-          # D
           {embed_type, embed1, embed2} = get_embed_data!(op1[action], op2["retain"])
           handler = Delta.get_handler!(embed_type)
 
           composed_embed = %{embed_type => handler.compose(embed1, embed2, action == "retain")}
-          keep_nil? = action == :retain && type == :number
+          keep_nil? = action == "retain" && type == :number
           attr = Attr.compose(op1["attributes"], op2["attributes"], keep_nil?)
 
           new(action, composed_embed, attr)

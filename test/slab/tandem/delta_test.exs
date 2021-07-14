@@ -1,7 +1,5 @@
 defmodule Slab.Tandem.DeltaTest do
   use ExUnit.Case, async: true
-
-  alias Slab.Config
   alias Slab.Tandem.{Delta, Op}
 
   # NOTE: {compose, transform, invert} tests are in their
