@@ -261,7 +261,7 @@ defmodule Slab.Tandem.Delta do
           inverted = push(inverted, Op.delete(length))
           {inverted, base_index}
 
-        Op.retain?(op, :number) && !Op.has_attribute?(op) ->
+        Op.retain?(op, :number) && !Op.has_attributes?(op) ->
           inverted = push(inverted, Op.retain(length))
           {inverted, base_index + length}
 
@@ -299,7 +299,7 @@ defmodule Slab.Tandem.Delta do
       Op.delete?(op) ->
         push(inverted, base_op)
 
-      Op.retain?(op) && Op.has_attribute?(op) ->
+      Op.retain?(op) && Op.has_attributes?(op) ->
         attrs = Attr.invert(op["attributes"], base_op["attributes"])
         retain_op = base_op |> Op.size() |> Op.retain(attrs)
         push(inverted, retain_op)

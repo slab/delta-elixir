@@ -14,8 +14,8 @@ defmodule Slab.Tandem.Op do
   def retain(value, attr \\ false), do: new("retain", value, attr)
   def delete(value), do: new("delete", value)
 
-  def has_attribute?(%{"attributes" => %{}}), do: true
-  def has_attribute?(_), do: false
+  def has_attributes?(%{"attributes" => %{}}), do: true
+  def has_attributes?(_), do: false
 
   def type?(op, action, value_type \\ nil)
   def type?(%{} = op, action, nil) when is_map_key(op, action), do: true
@@ -53,13 +53,13 @@ defmodule Slab.Tandem.Op do
 
   def get_embed_data!(a, b) do
     cond do
-      !is_map(a) ->
+      not is_map(a) ->
         raise("cannot retain #{inspect(a)}")
 
-      !is_map(b) ->
+      not is_map(b) ->
         raise("cannot retain #{inspect(b)}")
 
-      map_size(a) != 1 && Map.keys(a) != Map.keys(b) ->
+      map_size(a) != 1 and Map.keys(a) != Map.keys(b) ->
         raise("embeds not matched: #{inspect(a: a, b: b)}")
 
       true ->
