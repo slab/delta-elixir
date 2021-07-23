@@ -128,6 +128,16 @@ defmodule Slab.TandemTest.Delta.Transform do
       on_exit(fn -> Application.put_env(:slab, :delta, custom_embeds: embeds) end)
     end
 
+    test "transform an embed change with number" do
+      a = [Op.retain(1)]
+      b = [Op.retain(%{"delta" => [Op.insert("b")]})]
+
+      expected = [Op.retain(%{"delta" => [Op.insert("b")]})]
+
+      assert Delta.transform(a, b, true) == expected
+      assert Delta.transform(a, b, false) == expected
+    end
+
     test "transform an embed change" do
       a = [Op.retain(%{"delta" => [Op.insert("a")]})]
       b = [Op.retain(%{"delta" => [Op.insert("b")]})]

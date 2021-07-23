@@ -137,6 +137,10 @@ defmodule Slab.Tandem.Op do
           attrs = Attr.transform(op1["attributes"], op2["attributes"], priority)
           retain(embed, attrs)
 
+        retain?(op1, :number) && retain?(op2, :map) ->
+          attrs = Attr.transform(op1["attributes"], op2["attributes"], priority)
+          retain(op2["retain"], attrs)
+
         true ->
           attrs = Attr.transform(op1["attributes"], op2["attributes"], priority)
           retain(size(op1), attrs)
