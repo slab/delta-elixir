@@ -1,28 +1,69 @@
 defmodule Delta.MixProject do
   use Mix.Project
 
+
+  @app     :delta
+  @name    "Delta"
+  @version "0.1.0"
+  @github  "https://github.com/slab/#{@app}"
+
+
   def project do
     [
-      app: :delta,
-      version: "0.1.0",
-      elixir: "~> 1.10",
-      start_permanent: Mix.env() == :prod,
-      deps: deps()
+      # Project
+      app:            @app,
+      version:        @version,
+      elixir:         "~> 1.9",
+      description:    description(),
+      package:        package(),
+      deps:           deps(),
+      elixirc_paths:  elixirc_paths(Mix.env()),
+
+      # ExDoc
+      name:           @name,
+      docs: [
+        main:         @name,
+        source_url:   @github,
+        homepage_url: @github,
+        canonical:    "https://hexdocs.pm/#{@app}",
+        extras:       ["README.md"]
+      ]
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+
+  defp description do
+    "Simple, yet expressive format to describe contents and changes"
+  end
+
+
+  # BEAM Application
   def application do
     [
+      env: [custom_embeds: []],
       extra_applications: [:logger]
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
-  defp deps do
+
+  # Dependencies
+  defp deps, do: []
+
+
+  # Compilation Paths
+  defp elixirc_paths(:dev),  do: elixirc_paths(:test)
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
+
+
+  # Package Information
+  defp package do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      name: @app,
+      maintainers: ["Jason Chen", "Sheharyar Naseer"],
+      licenses: ["MIT"],
+      files: ~w(mix.exs lib README.md),
+      links: %{"Github" => @github}
     ]
   end
 end
