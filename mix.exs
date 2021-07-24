@@ -47,7 +47,11 @@ defmodule Delta.MixProject do
 
 
   # Dependencies
-  defp deps, do: []
+  defp deps do
+    [
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
 
 
   # Compilation Paths
