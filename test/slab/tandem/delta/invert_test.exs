@@ -103,5 +103,76 @@ defmodule Slab.Tandem.Delta.InvertTest do
       assert inverted == expected
       assert base == base |> Delta.compose(change) |> Delta.compose(inverted)
     end
+
+    test "invert an embed change with numbers" do
+      delta = [
+        Op.retain(1),
+        Op.retain(1, %{"bold" => true}),
+        Op.retain(%{"delta" => [Op.insert("b")]})
+      ]
+
+      base = [Op.insert("\n\n"), Op.insert(%{"delta" => [Op.insert("a")]})]
+
+      expected = [
+        Op.retain(1),
+        Op.retain(1, %{"bold" => nil}),
+        Op.retain(%{"delta" => [Op.delete(1)]})
+      ]
+
+      inverted = Delta.invert(delta, base)
+
+      assert inverted == expected
+      assert base == base |> Delta.compose(delta) |> Delta.compose(inverted)
+    end
+
+    test "respects base attributes" do
+      delta = [
+        Op.delete(1),
+        Op.retain(1, %{"header" => 2}),
+        Op.retain(%{"delta" => [Op.insert("b")]}, %{"padding" => 10, "margin" => 0})
+      ]
+
+      base = [
+        Op.insert("\n"),
+        Op.insert("\n", %{"header" => 1}),
+        Op.insert(%{"delta" => [Op.insert("a")]}, %{"margin" => 10})
+      ]
+
+      expected = [
+        Op.insert("\n"),
+        Op.retain(1, %{"header" => 1}),
+        Op.retain(%{"delta" => [Op.delete(1)]}, %{"padding" => nil, "margin" => 10})
+      ]
+
+      inverted = Delta.invert(delta, base)
+
+      assert inverted == expected
+      assert base == base |> Delta.compose(delta) |> Delta.compose(inverted)
+    end
+
+    test "works with multiple embeds" do
+      delta = [
+        Op.retain(1),
+        Op.retain(%{"delta" => [Op.delete(1)]}),
+        Op.retain(%{"delta" => [Op.delete(1)]})
+      ]
+
+      base = [
+        Op.insert("\n"),
+        Op.insert(%{"delta" => [Op.insert("a")]}),
+        Op.insert(%{"delta" => [Op.insert("b")]})
+      ]
+
+      expected = [
+        Op.retain(1),
+        Op.retain(%{"delta" => [Op.insert("a")]}),
+        Op.retain(%{"delta" => [Op.insert("b")]})
+      ]
+
+      inverted = Delta.invert(delta, base)
+
+      assert inverted == expected
+      assert base == base |> Delta.compose(delta) |> Delta.compose(inverted)
+    end
   end
 end

@@ -275,7 +275,11 @@ defmodule Slab.Tandem.Delta do
 
         # Delegate to the embed handler when change op is an embed
         Op.retain?(op, :map) ->
-          base_op = hd(base)
+          base_op =
+            base
+            |> slice(base_index, length)
+            |> hd
+
           {embed_type, embed1, embed2} = Op.get_embed_data!(op["retain"], base_op["insert"])
           handler = get_handler!(embed_type)
 
@@ -283,7 +287,7 @@ defmodule Slab.Tandem.Delta do
           attrs = Attr.invert(op["attributes"], base_op["attributes"])
           inverted = push(inverted, Op.retain(embed, attrs))
 
-          {inverted, base_index}
+          {inverted, base_index + 1}
 
         true ->
           {inverted, base_index}
