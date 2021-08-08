@@ -80,11 +80,15 @@ Delta.compose(delta, death)
 # ]
 ```
 
+<br>
 
-### Operations
 
 
-**Insert**
+
+## Operations
+
+
+### Insert
 
 Insert operations have an `insert` key defined. A String value represents inserting text. Any
 other type represents inserting an embed (however only one level of object comparison will be
@@ -111,7 +115,7 @@ Op.insert(%{"video" => "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, %{"width"
 ```
 
 
-**Delete**
+### Delete
 
 Delete operations have a positive integer `delete` key defined representing the number of
 characters to delete. All embeds have a length of 1.
@@ -122,7 +126,7 @@ Op.delete(10)
 ```
 
 
-**Retain**
+### Retain
 
 Retain operations have a positive integer `retain` key defined representing the number of
 characters to keep (other libraries might use the name keep or skip). An optional `attributes`
@@ -140,6 +144,85 @@ Op.retain(5, %{"bold" => true})
 
 # Keep and unbold the next 5 characters
 Op.retain(5, %{"bold" => nil})
+```
+
+<br>
+
+
+
+
+## Operational Transform
+
+Operational Transform (OT) is a technology for building collabortive experiences, and is
+especially useful in application sharing and building real-time document editors that support
+multi-user collaboration (e.g. Google Docs, Slab).
+
+Delta supports OT out of the box and can be very useful in employing Operational Transform
+techniques in Elixir. It supports the following properties:
+
+
+### Compose
+
+Returns a new Delta that is equivalent to applying the operations of one Delta, followed
+by another Delta:
+
+```elixir
+a = [Op.insert("abc")]
+b = [Op.retain(1), Op.delete(1)]
+
+Delta.compose(a, b)
+# => [%{"insert" => "ac"}]
+```
+
+### Transform
+
+Transforms given delta against another's operations. This accepts an optional `priority`
+argument (default: `false`), used to break ties. If `true`, the first delta takes priority
+over other, that is, its actions are considered to happen "first."
+
+```elixir
+a = [Op.insert("a")]
+b = [Op.insert("b"), Op.retain(5), Op.insert("c")]
+
+Delta.transform(a, b, true)
+# => [
+#  %{"retain" => 1},
+#  %{"insert" => "b"},
+#  %{"retain" => 5},
+#  %{"insert" => "c"},
+# ]
+
+Delta.transform(a, b)
+# => [
+#  %{"insert" => "b"},
+#  %{"retain" => 6},
+#  %{"insert" => "c"},
+# ]
+```
+
+### Invert
+
+Returns an inverted delta that has the opposite effect of against a base document delta.
+That is `base |> Delta.compose(change) |> Delta.compose(inverted) == base`.
+
+```elixir
+base = [Op.insert("Hello\nWorld")]
+
+change = [
+  Op.retain(6, %{"bold" => true}),
+  Op.delete(5),
+  Op.insert("!"),
+]
+
+inverted = Delta.invert(change, base)
+# => [
+#   %{"retain" => 6, "attributes" => %{"bold" => nil}},
+#   %{"insert" => "World"},
+#   %{"delete" => 1},
+# ]
+
+base |> Delta.compose(change) |> Delta.compose(inverted) == base
+# => true
 ```
 
 <br>
