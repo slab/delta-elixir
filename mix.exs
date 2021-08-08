@@ -5,7 +5,7 @@ defmodule Delta.MixProject do
   @app     :delta
   @name    "Delta"
   @version "0.1.0"
-  @github  "https://github.com/slab/#{@app}"
+  @github  "https://github.com/slab/delta-elixir"
 
 
   def project do
@@ -13,7 +13,7 @@ defmodule Delta.MixProject do
       # Project
       app:            @app,
       version:        @version,
-      elixir:         "~> 1.9",
+      elixir:         "~> 1.10",
       description:    description(),
       package:        package(),
       deps:           deps(),
@@ -48,9 +48,7 @@ defmodule Delta.MixProject do
 
   # Dependencies
   defp deps do
-    [
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
-    ]
+    [{:ex_doc, ">= 0.0.0", only: :dev, runtime: false}]
   end
 
 
@@ -67,7 +65,10 @@ defmodule Delta.MixProject do
       maintainers: ["Jason Chen", "Sheharyar Naseer"],
       licenses: ["MIT"],
       files: ~w(mix.exs lib README.md),
-      links: %{"Github" => @github}
+      links: %{
+        "Github" => @github,
+        "Delta.js" => "https://github.com/quilljs/delta"
+      }
     ]
   end
 end
