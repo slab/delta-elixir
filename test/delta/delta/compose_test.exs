@@ -293,5 +293,13 @@ defmodule Tests.Delta.Compose do
 
       assert Delta.compose(a, b) == expected
     end
+
+    test "delete a retain" do
+      a = [Op.retain(%{"delta" => [Op.insert("a")]})]
+      b = [Op.delete(1)]
+      expected = [Op.delete(1)]
+
+      assert Delta.compose(a, b) == expected
+    end
   end
 end
