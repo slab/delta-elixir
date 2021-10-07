@@ -51,6 +51,7 @@ defmodule Delta.Op do
     end
   end
 
+  @spec get_embed_data!(map, map) :: {any, any, any}
   def get_embed_data!(a, b) do
     cond do
       not is_map(a) ->
@@ -73,7 +74,7 @@ defmodule Delta.Op do
 
     composed =
       case {info(op1), info(op2)} do
-        {{"retain", :number}, {"delete", :number}} ->
+        {{"retain", _type}, {"delete", :number}} ->
           op2
 
         {{"retain", :map}, {"retain", :number}} ->
