@@ -53,7 +53,7 @@ defmodule Tests.Delta do
       assert Delta.slice(delta, 1, 7) == [%{"insert" => "1🙋‍♂️7"}]
     end
 
-    test "slice emoji with joiner and modifer" do
+    test "slice emoji with joiner and modifier" do
       delta = [%{"insert" => "01🙋🏽‍♂️90"}]
       assert Delta.slice(delta, 1, 9) == [%{"insert" => "1🙋🏽‍♂️9"}]
     end

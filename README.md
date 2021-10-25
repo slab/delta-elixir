@@ -1,10 +1,12 @@
 Delta
 =====
 
-[![Build Status][badge-github]][github-build]
-[![Version][badge-version]][hexpm]
-[![Downloads][badge-downloads]][hexpm]
-[![License][badge-license]][github-license]
+[![CI](https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg)](https://github.com/slab/delta-elixir/actions/workflows/ci.yml)
+[![Module Version](https://img.shields.io/hexpm/v/delta.svg)](https://hex.pm/packages/delta)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/delta/)
+[![Total Download](https://img.shields.io/hexpm/dt/delta.svg)](https://hex.pm/packages/delta)
+[![License](https://img.shields.io/hexpm/l/delta.svg)](https://github.com/slab/delta-elixir/blob/master/LICENSE.md)
+[![Last Updated](https://img.shields.io/github/last-commit/slab/delta-elixir.svg)](https://github.com/slab/delta-elixir/commits/master)
 
 
 > Simple yet expressive format to describe documents' contents and changes 🗃
@@ -15,38 +17,29 @@ The format is a strict subset of JSON, is human readable, and easily parsible by
 Deltas can describe any rich-text document, includes all text and formatting information,
 without the ambiguity and complexity of HTML.
 
-The Delta format is suitable for [Operational Transform][wiki-ot] and can be used in real-time,
+The Delta format is suitable for [Operational Transform](https://en.wikipedia.org/wiki/Operational_transformation) and can be used in real-time,
 collaborative document editors (e.g. Slab, Google Docs). A walkthough of the motivation and
-design thinking behind Deltas are on [Designing the Delta Format][quill-delta].
+design thinking behind Deltas are on [Designing the Delta Format](https://quilljs.com/guides/designing-the-delta-format/).
 
-See the [Documentation][docs].
-
-<br>
-
-
-
+See the [Documentation](https://hexdocs.pm/delta).
 
 ## Installation
 
-Add `delta` to your project dependencies in `mix.exs`:
+Add `:delta` to your project dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:delta, "~> 0.1.1"}]
+  [
+    {:delta, "~> 0.1.1"}
+  ]
 end
 ```
-
-<br>
-
-
-
 
 ## Usage
 
 A Delta is made up of a list of operations, which describe changes to a document. These can be
 `insert`, `delete` or `retain`. These operations do not take an index, but instead describe the
 change at the current index. Retains are used to "keep" parts of the document.
-
 
 ### Quick Example
 
@@ -80,13 +73,7 @@ Delta.compose(delta, death)
 # ]
 ```
 
-<br>
-
-
-
-
 ## Operations
-
 
 ### Insert
 
@@ -95,7 +82,7 @@ other type represents inserting an embed (however only one level of object compa
 performed for equality).
 
 In both cases of text and embeds, an optional `attributes` key can be defined with a `map` to
-describe additonal formatting information. Formats can be changed by the `retain` operation.
+describe additional formatting information. Formats can be changed by the `retain` operation.
 
 ```elixir
 # Insert a text
@@ -114,7 +101,6 @@ Op.insert(%{"image" => "https://app.com/logo.png"}, %{"alt" => "App Logo"})
 Op.insert(%{"video" => "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, %{"width" => 420, "height" => 315})
 ```
 
-
 ### Delete
 
 Delete operations have a positive integer `delete` key defined representing the number of
@@ -124,7 +110,6 @@ characters to delete. All embeds have a length of 1.
 # Delete the next 10 characters
 Op.delete(10)
 ```
-
 
 ### Retain
 
@@ -146,11 +131,6 @@ Op.retain(5, %{"bold" => true})
 Op.retain(5, %{"bold" => nil})
 ```
 
-<br>
-
-
-
-
 ## Operational Transform
 
 Operational Transform (OT) is a technology for building collabortive experiences, and is
@@ -159,7 +139,6 @@ multi-user collaboration (e.g. Google Docs, Slab).
 
 Delta supports OT out of the box and can be very useful in employing Operational Transform
 techniques in Elixir. It supports the following properties:
-
 
 ### Compose
 
@@ -225,46 +204,16 @@ base |> Delta.compose(change) |> Delta.compose(inverted) == base
 # => true
 ```
 
-<br>
-
-
-
-
 ## Contributing
 
- - [Fork][github-fork], Enhance, Send PR
+ - [Fork](https://github.com/slab/delta-elixir/fork), enhance, and send PR
  - Lock issues with any bugs or feature requests
  - Implement something from Roadmap
  - Spread the word :heart:
 
-<br>
+## Copyright and License
 
+Copyright (c) 2021 Slab
 
-
-
-## License
-
-This package is available as open source under the terms of the [MIT License][github-license].
-
-<br>
-
-
-
-
-
-[badge-github]:     https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg
-[badge-version]:    https://img.shields.io/hexpm/v/delta.svg
-[badge-license]:    https://img.shields.io/hexpm/l/delta.svg
-[badge-downloads]:  https://img.shields.io/hexpm/dt/delta.svg
-
-[hexpm]:            https://hex.pm/packages/delta
-[github-build]:     https://github.com/slab/delta-elixir/actions/workflows/ci.yml
-[github-license]:   https://github.com/slab/delta-elixir/blob/master/LICENSE
-[github-fork]:      https://github.com/slab/delta-elixir/fork
-
-[docs]:             https://hexdocs.pm/delta
-
-[wiki-ot]:          https://en.wikipedia.org/wiki/Operational_transformation
-[quill-delta]:      https://quilljs.com/guides/designing-the-delta-format/
-
-
+This work is free. You can redistribute it and/or modify it under the
+terms of the MIT License. See the [LICENSE.md](./LICENSE.md) file for more details.
