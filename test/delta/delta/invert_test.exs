@@ -1,8 +1,5 @@
-defmodule Slab.Tandem.Delta.InvertTest do
-  use ExUnit.Case
-
-  alias Slab.{Config, TestDeltaEmbed}
-  alias Slab.Tandem.{Delta, Op}
+defmodule Tests.Delta.Invert do
+  use Delta.Support.Case, async: false
 
   describe ".invert/2 (basic)" do
     test "insert" do
@@ -78,11 +75,7 @@ defmodule Slab.Tandem.Delta.InvertTest do
   end
 
   describe ".invert/2 (custom embeds)" do
-    setup do
-      embeds = Config.get(:delta, :custom_embeds, [])
-      Application.put_env(:slab, :delta, custom_embeds: [TestDeltaEmbed])
-      on_exit(fn -> Application.put_env(:slab, :delta, custom_embeds: embeds) end)
-    end
+    @describetag custom_embeds: [TestEmbed]
 
     test "invert a normal change" do
       change = [Op.retain(1, %{"bold" => true})]

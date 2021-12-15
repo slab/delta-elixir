@@ -1,4 +1,4 @@
-defmodule Slab.Tandem.EmbedHandler do
+defmodule Delta.EmbedHandler do
   @type t :: module()
   @type embed :: map()
 

@@ -1,4 +1,4 @@
-defmodule Slab.Tandem.Attr do
+defmodule Delta.Attr do
   def compose(a, b, keepNil \\ false) do
     attr = merge(a || %{}, b || %{}, keepNil)
 

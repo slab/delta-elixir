@@ -1,5 +1,5 @@
-defmodule Slab.Tandem.Op do
-  alias Slab.Tandem.{Attr, Delta}
+defmodule Delta.Op do
+  alias Delta.Attr
 
   def new(action, value, attr \\ false)
   def new("delete", length, _attr), do: %{"delete" => length}

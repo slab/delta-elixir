@@ -1,6 +1,5 @@
-defmodule Slab.Tandem.DeltaTest do
-  use ExUnit.Case, async: true
-  alias Slab.Tandem.{Delta, Op}
+defmodule Tests.Delta do
+  use Delta.Support.Case, async: true
 
   # NOTE: {compose, transform, invert} tests are in their
   # dedicated test suites under delta/

@@ -1,8 +1,5 @@
-defmodule Slab.TandemTest.Delta.Transform do
-  use ExUnit.Case
-
-  alias Slab.{Config, TestDeltaEmbed}
-  alias Slab.Tandem.{Delta, Op}
+defmodule Tests.Delta.Transform do
+  use Delta.Support.Case, async: false
 
   describe ".transform/3 (basic)" do
     test "insert + insert" do
@@ -122,11 +119,7 @@ defmodule Slab.TandemTest.Delta.Transform do
   end
 
   describe ".transform/3 (custom embeds)" do
-    setup do
-      embeds = Config.get(:delta, :custom_embeds, [])
-      Application.put_env(:slab, :delta, custom_embeds: [TestDeltaEmbed])
-      on_exit(fn -> Application.put_env(:slab, :delta, custom_embeds: embeds) end)
-    end
+    @describetag custom_embeds: [TestEmbed]
 
     test "transform an embed change with number" do
       a = [Op.retain(1)]
@@ -150,3 +143,4 @@ defmodule Slab.TandemTest.Delta.Transform do
     end
   end
 end
+

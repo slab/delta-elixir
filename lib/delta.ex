@@ -1,10 +1,9 @@
-defmodule Slab.Tandem.Delta do
-  alias Slab.Config
-  alias Slab.Tandem.{Attr, Op}
+defmodule Delta do
+  alias Delta.{Attr, Op}
 
   def get_handler!(embed_type) do
     :delta
-    |> Config.get(:custom_embeds, [])
+    |> Application.get_env(:custom_embeds, [])
     |> Enum.find(&(&1.name == embed_type))
     |> case do
       nil -> raise("no embed handler configured for #{inspect(embed_type)}")
