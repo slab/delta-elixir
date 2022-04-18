@@ -143,4 +143,3 @@ defmodule Tests.Delta.Transform do
     end
   end
 end
-
