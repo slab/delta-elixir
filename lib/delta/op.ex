@@ -1,5 +1,6 @@
 defmodule Delta.Op do
   alias Delta.Attr
+  alias Delta.Utils
 
   def new(action, value, attr \\ false)
   def new("delete", length, _attr), do: %{"delete" => length}
@@ -40,14 +41,16 @@ defmodule Delta.Op do
   def size(%{"retain" => len}) when is_integer(len), do: len
   def size(_op), do: 1
 
-  def take(op = %{"insert" => embed}, _length) when not is_bitstring(embed) do
+  def take(op, length, opts \\ [])
+
+  def take(op = %{"insert" => embed}, _length, _opts) when not is_bitstring(embed) do
     {op, false}
   end
 
-  def take(op, length) do
+  def take(op, length, opts) do
     case size(op) - length do
       0 -> {op, false}
-      _ -> take_partial(op, length)
+      _ -> take_partial(op, length, opts)
     end
   end
 
@@ -157,7 +160,9 @@ defmodule Delta.Op do
     {op1, a, op2, b}
   end
 
-  defp take_partial(%{"insert" => text} = op, len) do
+  defp take_partial(op, 0, _opts), do: {insert("", op["attributes"]), op}
+
+  defp take_partial(%{"insert" => text} = op, len, opts) do
     binary = :unicode.characters_to_binary(text, :utf8, :utf16)
     binary_length = byte_size(binary)
 
@@ -171,20 +176,30 @@ defmodule Delta.Op do
       |> Kernel.binary_part(len * 2, binary_length - len * 2)
       |> :unicode.characters_to_binary(:utf16, :utf8)
 
-    case {is_binary(left), is_binary(right)} do
-      {true, true} ->
+    case {is_binary(left), is_binary(right), Keyword.get(opts, :align, false)} do
+      {true, true, false} ->
         {insert(left, op["attributes"]), insert(right, op["attributes"])}
+
+      {true, true, true} ->
+        if Utils.slices_likely_cut_emoji?(left, right) do
+          take_partial(op, len - 1, opts)
+        else
+          {insert(left, op["attributes"]), insert(right, op["attributes"])}
+        end
+
+      {_, _, true} ->
+        take_partial(op, len - 1, opts)
 
       _ ->
         raise "Encoding failed in take_partial #{inspect({text, op, len, left, right})}"
     end
   end
 
-  defp take_partial(%{"delete" => full}, length) do
+  defp take_partial(%{"delete" => full}, length, _opts) do
     {delete(length), delete(full - length)}
   end
 
-  defp take_partial(%{"retain" => full} = op, length) do
+  defp take_partial(%{"retain" => full} = op, length, _opts) do
     {retain(length, op["attributes"]), retain(full - length, op["attributes"])}
   end
 

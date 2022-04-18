@@ -141,9 +141,17 @@ defmodule Delta do
     middle
   end
 
-  def split(delta, 0), do: {[], delta}
+  def slice_max(delta, index, len) do
+    {_left, right} = split(delta, index, align: true)
+    {middle, _rest} = split(right, len, align: true)
+    middle
+  end
 
-  def split(delta, index) when is_integer(index) do
+  def split(delta, index, opts \\ [])
+
+  def split(delta, 0, _), do: {[], delta}
+
+  def split(delta, index, opts) when is_integer(index) do
     do_split(
       [],
       delta,
@@ -156,33 +164,33 @@ defmodule Delta do
           {:cont, index - op_size}
         end
       end,
-      index
+      index,
+      opts
     )
   end
 
-  def split(delta, func) when is_function(func) do
-    do_split([], delta, func)
+  def split(delta, func, opts) when is_function(func) do
+    do_split([], delta, func, nil, opts)
   end
 
-  defp do_split(passed, remaining, func, context \\ nil)
-  defp do_split(passed, [], _, _), do: {passed, []}
+  defp do_split(passed, [], _, _, _), do: {passed, []}
 
-  defp do_split(passed, remaining, func, context) when is_function(func, 1) do
-    do_split(passed, remaining, fn op, _ -> func.(op) end, context)
+  defp do_split(passed, remaining, func, context, opts) when is_function(func, 1) do
+    do_split(passed, remaining, fn op, _ -> func.(op) end, context, opts)
   end
 
-  defp do_split(passed, remaining, func, context) when is_function(func, 2) do
+  defp do_split(passed, remaining, func, context, opts) when is_function(func, 2) do
     [first | remaining] = remaining
 
     case func.(first, context) do
       :cont ->
-        do_split([first | passed], remaining, func, context)
+        do_split([first | passed], remaining, func, context, opts)
 
       {:cont, context} ->
-        do_split([first | passed], remaining, func, context)
+        do_split([first | passed], remaining, func, context, opts)
 
       index ->
-        case Op.take(first, index) do
+        case Op.take(first, index, opts) do
           {false, right} ->
             {Enum.reverse(passed), [right | remaining]}
 

@@ -47,4 +47,3 @@ defmodule Tests.Delta.TransformPosition do
     assert Delta.transform(4, delta) == 1
   end
 end
-
