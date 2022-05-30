@@ -4,7 +4,7 @@ defmodule Delta.MixProject do
 
   @app     :delta
   @name    "Delta"
-  @version "0.1.1"
+  @version "0.2.0"
   @github  "https://github.com/slab/delta-elixir"
 
 
