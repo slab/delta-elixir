@@ -1,14 +1,11 @@
-Delta
-=====
+# Delta
 
 [![Build Status][badge-github]][github-build]
 [![Version][badge-version]][hexpm]
 [![Downloads][badge-downloads]][hexpm]
 [![License][badge-license]][github-license]
 
-
 > Simple yet expressive format to describe documents' contents and changes 🗃
-
 
 Deltas are a simple, yet expressive format that can be used to describe contents and changes.
 The format is a strict subset of JSON, is human readable, and easily parsible by machines.
@@ -23,9 +20,6 @@ See the [Documentation][docs].
 
 <br>
 
-
-
-
 ## Installation
 
 Add `delta` to your project dependencies in `mix.exs`:
@@ -38,15 +32,11 @@ end
 
 <br>
 
-
-
-
 ## Usage
 
 A Delta is made up of a list of operations, which describe changes to a document. These can be
 `insert`, `delete` or `retain`. These operations do not take an index, but instead describe the
 change at the current index. Retains are used to "keep" parts of the document.
-
 
 ### Quick Example
 
@@ -82,11 +72,7 @@ Delta.compose(delta, death)
 
 <br>
 
-
-
-
 ## Operations
-
 
 ### Insert
 
@@ -114,7 +100,6 @@ Op.insert(%{"image" => "https://app.com/logo.png"}, %{"alt" => "App Logo"})
 Op.insert(%{"video" => "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, %{"width" => 420, "height" => 315})
 ```
 
-
 ### Delete
 
 Delete operations have a positive integer `delete` key defined representing the number of
@@ -124,7 +109,6 @@ characters to delete. All embeds have a length of 1.
 # Delete the next 10 characters
 Op.delete(10)
 ```
-
 
 ### Retain
 
@@ -148,9 +132,6 @@ Op.retain(5, %{"bold" => nil})
 
 <br>
 
-
-
-
 ## Operational Transform
 
 Operational Transform (OT) is a technology for building collabortive experiences, and is
@@ -159,7 +140,6 @@ multi-user collaboration (e.g. Google Docs, Slab).
 
 Delta supports OT out of the box and can be very useful in employing Operational Transform
 techniques in Elixir. It supports the following properties:
-
 
 ### Compose
 
@@ -227,44 +207,23 @@ base |> Delta.compose(change) |> Delta.compose(inverted) == base
 
 <br>
 
-
-
-
 ## Contributing
 
- - [Fork][github-fork], Enhance, Send PR
- - Lock issues with any bugs or feature requests
- - Implement something from Roadmap
- - Spread the word :heart:
+- [Fork][github-fork], Enhance, Send PR
+- Lock issues with any bugs or feature requests
+- Implement something from Roadmap
+- Spread the word :heart:
 
 <br>
 
-
-
-
-## License
-
-This package is available as open source under the terms of the [MIT License][github-license].
-
-<br>
-
-
-
-
-
-[badge-github]:     https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg
-[badge-version]:    https://img.shields.io/hexpm/v/delta.svg
-[badge-license]:    https://img.shields.io/hexpm/l/delta.svg
-[badge-downloads]:  https://img.shields.io/hexpm/dt/delta.svg
-
-[hexpm]:            https://hex.pm/packages/delta
-[github-build]:     https://github.com/slab/delta-elixir/actions/workflows/ci.yml
-[github-license]:   https://github.com/slab/delta-elixir/blob/master/LICENSE
-[github-fork]:      https://github.com/slab/delta-elixir/fork
-
-[docs]:             https://hexdocs.pm/delta
-
-[wiki-ot]:          https://en.wikipedia.org/wiki/Operational_transformation
-[quill-delta]:      https://quilljs.com/guides/designing-the-delta-format/
-
-
+[badge-github]: https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg
+[badge-version]: https://img.shields.io/hexpm/v/delta.svg
+[badge-license]: https://img.shields.io/hexpm/l/delta.svg
+[badge-downloads]: https://img.shields.io/hexpm/dt/delta.svg
+[hexpm]: https://hex.pm/packages/delta
+[github-build]: https://github.com/slab/delta-elixir/actions/workflows/ci.yml
+[github-license]: https://github.com/slab/delta-elixir/blob/master/LICENSE
+[github-fork]: https://github.com/slab/delta-elixir/fork
+[docs]: https://hexdocs.pm/delta
+[wiki-ot]: https://en.wikipedia.org/wiki/Operational_transformation
+[quill-delta]: https://quilljs.com/guides/designing-the-delta-format/
