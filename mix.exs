@@ -62,8 +62,8 @@ defmodule Delta.MixProject do
   defp package do
     [
       name: @app,
-      maintainers: ["Jason Chen", "Sheharyar Naseer"],
-      licenses: ["MIT"],
+      maintainers: ["Slab"],
+      licenses: ["BSD-3-Clause"],
       files: ~w(mix.exs lib README.md),
       links: %{
         "Github" => @github,
