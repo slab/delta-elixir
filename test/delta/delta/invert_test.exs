@@ -1,5 +1,6 @@
 defmodule Tests.Delta.Invert do
   use Delta.Support.Case, async: false
+  doctest Delta, only: [invert: 2]
 
   describe ".invert/2 (basic)" do
     test "insert" do

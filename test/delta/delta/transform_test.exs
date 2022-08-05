@@ -1,5 +1,6 @@
 defmodule Tests.Delta.Transform do
   use Delta.Support.Case, async: false
+  doctest Delta, only: [transform: 3]
 
   describe ".transform/3 (basic)" do
     test "insert + insert" do
