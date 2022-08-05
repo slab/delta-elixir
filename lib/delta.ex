@@ -11,6 +11,15 @@ defmodule Delta do
     end
   end
 
+  @doc ~S"""
+  Returns a new Delta that is equivalent to applying the operations of one Delta, followed by another Delta
+
+  ## Examples
+    iex> a = [Op.insert("abc")]
+    iex> b = [Op.retain(1), Op.delete(1)]
+    iex> Delta.compose(a, b)
+    [%{"insert" => "ac"}]
+  """
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
@@ -211,6 +220,29 @@ defmodule Delta do
     end
   end
 
+  @doc ~S"""
+    Transforms given delta against another's operations.
+
+    This accepts an optional priority argument (default: false), used to break ties.
+    If true, the first delta takes priority over other, that is, its actions are considered to happen "first."
+
+    ## Examples
+      iex> a = [Op.insert("a")]
+      iex> b = [Op.insert("b"), Op.retain(5), Op.insert("c")]
+      iex> Delta.transform(a, b, true)
+      [
+        %{"retain" => 1},
+        %{"insert" => "b"},
+        %{"retain" => 5},
+        %{"insert" => "c"},
+      ]
+      iex> Delta.transform(a, b)
+      [
+        %{"insert" => "b"},
+        %{"retain" => 6},
+        %{"insert" => "c"},
+      ]
+  """
   def transform(_, _, priority \\ false)
 
   def transform(index, delta, priority) when is_integer(index) do
@@ -266,6 +298,27 @@ defmodule Delta do
     |> do_transform(delta1, delta2, priority)
   end
 
+  @doc ~S"""
+  Returns an inverted delta that has the opposite effect of against a base document delta.
+
+  That is base |> Delta.compose(change) |> Delta.compose(inverted) == base.
+
+  ## Examples
+      iex> base = [Op.insert("Hello\nWorld")]
+      iex> change = [
+      ...>   Op.retain(6, %{"bold" => true}),
+      ...>   Op.delete(5),
+      ...>   Op.insert("!"),
+      ...> ]
+      iex> inverted = Delta.invert(change, base)
+      [
+        %{"retain" => 6, "attributes" => %{"bold" => nil}},
+        %{"insert" => "World"},
+        %{"delete" => 1},
+      ]
+      iex> base |> Delta.compose(change) |> Delta.compose(inverted) == base
+      true
+  """
   def invert(change, base) do
     change
     |> Enum.reduce({[], 0}, fn op, {inverted, base_index} ->

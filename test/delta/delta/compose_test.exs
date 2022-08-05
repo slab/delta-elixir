@@ -1,5 +1,6 @@
 defmodule Tests.Delta.Compose do
   use Delta.Support.Case, async: false
+  doctest Delta, only: [compose: 2]
 
   describe ".compose/2 (basic)" do
     test "insert + insert" do
