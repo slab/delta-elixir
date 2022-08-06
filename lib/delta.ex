@@ -1,6 +1,9 @@
 defmodule Delta do
   alias Delta.{Attr, Op}
 
+  @type t :: list(Op.t)
+
+  @spec get_handler!(atom) :: module
   def get_handler!(embed_type) do
     :delta
     |> Application.get_env(:custom_embeds, [])
@@ -20,14 +23,17 @@ defmodule Delta do
     iex> Delta.compose(a, b)
     [%{"insert" => "ac"}]
   """
+  @spec compose(t, t) :: t
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
+  @spec compose_all(t) :: t
   def compose_all(deltas) do
     Enum.reduce(deltas, [], &compose(&2, &1))
   end
 
+  @spec do_compose(t, t, t) :: t
   defp do_compose(result, [], []), do: result
 
   defp do_compose(result, [], [op | delta]) do
@@ -59,15 +65,18 @@ defmodule Delta do
     |> do_compose(delta1, delta2)
   end
 
+  @spec chop(t) :: t
   defp chop([%{"retain" => n} = op | delta]) when is_number(n) and map_size(op) == 1, do: delta
   defp chop(delta), do: delta
 
+  @spec compact(t) :: t
   def compact(delta) do
     delta
     |> Enum.reduce([], &push(&2, &1))
     |> Enum.reverse()
   end
 
+  @spec concat(t, t) :: t
   def concat(left, []), do: left
   def concat([], right), do: right
 
@@ -81,6 +90,8 @@ defmodule Delta do
     left ++ right
   end
 
+  @spec push(t, false) :: t
+  @spec push(t, Op.t) :: t
   def push(delta, false), do: delta
 
   def push([], op) do
@@ -100,6 +111,7 @@ defmodule Delta do
     end
   end
 
+  @spec do_push(Op.t, Op.t) :: Op.t | nil
   defp do_push(op, %{"delete" => 0}), do: op
   defp do_push(op, %{"insert" => ""}), do: op
   defp do_push(op, %{"retain" => 0}), do: op
@@ -146,24 +158,28 @@ defmodule Delta do
 
   defp do_push(_, _), do: nil
 
+  @spec size(t) :: non_neg_integer
   def size(delta) do
     Enum.reduce(delta, 0, fn op, sum ->
       sum + Op.size(op)
     end)
   end
 
+  @spec slice(t, non_neg_integer, non_neg_integer) :: t
   def slice(delta, index, len) do
     {_left, right} = split(delta, index)
     {middle, _rest} = split(right, len)
     middle
   end
 
+  @spec slice_max(t, non_neg_integer, non_neg_integer) :: t
   def slice_max(delta, index, len) do
     {_left, right} = split(delta, index, align: true)
     {middle, _rest} = split(right, len, align: true)
     middle
   end
 
+  @spec split(t, non_neg_integer | fun, Keyword.t) :: {t, t}
   def split(delta, index, opts \\ [])
 
   def split(delta, 0, _), do: {[], delta}
@@ -190,6 +206,7 @@ defmodule Delta do
     do_split([], delta, func, nil, opts)
   end
 
+  @spec do_split(t, [], any, any, any) :: {t, t}
   defp do_split(passed, [], _, _, _), do: {passed, []}
 
   defp do_split(passed, remaining, func, context, opts) when is_function(func, 1) do
@@ -208,6 +225,7 @@ defmodule Delta do
 
       index ->
         case Op.take(first, index, opts) do
+          # TODO: this seems unreachable according to Dialyzer
           {false, right} ->
             {Enum.reverse(passed), [right | remaining]}
 
@@ -243,6 +261,7 @@ defmodule Delta do
         %{"insert" => "c"},
       ]
   """
+  @spec transform(t, t, boolean) :: t
   def transform(_, _, priority \\ false)
 
   def transform(index, delta, priority) when is_integer(index) do
@@ -254,6 +273,8 @@ defmodule Delta do
     delta |> chop() |> Enum.reverse()
   end
 
+  @spec do_transform(non_neg_integer, non_neg_integer, t, boolean) :: non_neg_integer
+  @spec do_transform(t, t, t, boolean) :: t
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
   defp do_transform(_, index, [], _) when is_integer(index), do: index
 
@@ -319,6 +340,7 @@ defmodule Delta do
       iex> base |> Delta.compose(change) |> Delta.compose(inverted) == base
       true
   """
+  @spec invert(t, t) :: t
   def invert(change, base) do
     change
     |> Enum.reduce({[], 0}, fn op, {inverted, base_index} ->
@@ -366,6 +388,7 @@ defmodule Delta do
     |> Enum.reverse()
   end
 
+  @spec do_invert_slice(Op.t, Op.t, t) :: t
   defp do_invert_slice(op, base_op, inverted) do
     cond do
       Op.delete?(op) ->

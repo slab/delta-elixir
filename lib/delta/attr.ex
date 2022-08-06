@@ -1,4 +1,8 @@
 defmodule Delta.Attr do
+  @typep maybe_map :: map | nil
+
+  @spec compose(a :: maybe_map, b :: maybe_map) :: boolean | map
+  @spec compose(a :: maybe_map, b :: maybe_map, keepNil :: boolean) :: boolean | map
   def compose(a, b, keepNil \\ false) do
     attr = merge(a || %{}, b || %{}, keepNil)
 
@@ -8,6 +12,7 @@ defmodule Delta.Attr do
     end
   end
 
+  @spec transform(a :: maybe_map, b :: maybe_map, any) :: boolean | map
   def transform(a, b, _) when not is_map(a), do: b
   def transform(_, b, _) when not is_map(b), do: false
   def transform(_, b, false), do: b
@@ -30,6 +35,7 @@ defmodule Delta.Attr do
     end
   end
 
+  @spec invert(attr :: maybe_map, base :: maybe_map) :: map
   def invert(attr, base) do
     attr = attr || %{}
     base = base || %{}
@@ -51,6 +57,7 @@ defmodule Delta.Attr do
     end)
   end
 
+  @spec merge(a :: map, b :: map, boolean) :: map
   defp merge(a, b, false) do
     merged = Map.merge(a, b)
 
