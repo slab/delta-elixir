@@ -58,6 +58,22 @@ defmodule Tests.Delta.Compose do
       assert Delta.compose(a, b) == expected
     end
 
+    test "delete + delete different attributes" do
+      a = [Op.delete(1, %{"foo" => true})]
+      b = [Op.delete(1, %{"bar" => true})]
+      expected = [Op.delete(1, %{"foo" => true}), Op.delete(1, %{"bar" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete + delete same attributes" do
+      a = [Op.delete(1, %{"foo" => true})]
+      b = [Op.delete(1, %{"foo" => true})]
+      expected = [Op.delete(2, %{"foo" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
     test "retain + insert" do
       a = [Op.retain(1, %{"color" => "blue"})]
       b = [Op.insert("B")]

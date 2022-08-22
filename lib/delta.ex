@@ -95,7 +95,15 @@ defmodule Delta do
   defp do_push(op, %{"insert" => ""}), do: op
   defp do_push(op, %{"retain" => 0}), do: op
 
-  defp do_push(%{"delete" => left}, %{"delete" => right}) do
+  defp do_push(%{"delete" => left, "attributes" => attr}, %{
+         "delete" => right,
+         "attributes" => attr
+       }) do
+    Op.delete(left + right, attr)
+  end
+
+  defp do_push(%{"delete" => left} = last_op, %{"delete" => right} = op)
+       when map_size(last_op) == 1 and map_size(op) == 1 do
     Op.delete(left + right)
   end
 
