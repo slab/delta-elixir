@@ -19,9 +19,9 @@ defmodule Tests.Delta.Transform do
 
     test "insert + delete" do
       a = [Op.insert("A")]
-      b = [Op.delete(1)]
+      b = [Op.delete(1, %{"author" => "one"})]
 
-      assert Delta.transform(a, b) == [Op.retain(1), Op.delete(1)]
+      assert Delta.transform(a, b) == [Op.retain(1), Op.delete(1, %{"author" => "one"})]
     end
 
     test "delete + insert" do
@@ -39,7 +39,8 @@ defmodule Tests.Delta.Transform do
     end
 
     test "delete + delete" do
-      a = b = [Op.delete(1)]
+      a = [Op.delete(1, %{"author" => "one"})]
+      b = [Op.delete(1, %{"author" => "two"})]
 
       assert Delta.transform(a, b) == []
     end
@@ -82,13 +83,20 @@ defmodule Tests.Delta.Transform do
     end
 
     test "alternating edits" do
-      a = [Op.retain(2), Op.insert("si"), Op.delete(5)]
-      b = [Op.retain(1), Op.insert("e"), Op.delete(5), Op.retain(1), Op.insert("ow")]
+      a = [Op.retain(2), Op.insert("si"), Op.delete(5, %{"author" => "one"})]
+
+      b = [
+        Op.retain(1),
+        Op.insert("e"),
+        Op.delete(5, %{"author" => "two"}),
+        Op.retain(1),
+        Op.insert("ow")
+      ]
 
       assert Delta.transform(a, b, false) == [
                Op.retain(1),
                Op.insert("e"),
-               Op.delete(1),
+               Op.delete(1, %{"author" => "two"}),
                Op.retain(2),
                Op.insert("ow")
              ]
@@ -96,7 +104,7 @@ defmodule Tests.Delta.Transform do
       assert Delta.transform(b, a, false) == [
                Op.retain(2),
                Op.insert("si"),
-               Op.delete(1)
+               Op.delete(1, %{"author" => "one"})
              ]
     end
 
@@ -117,10 +125,10 @@ defmodule Tests.Delta.Transform do
     end
 
     test "trailing deletes with differing lengths" do
-      a = [Op.retain(2), Op.delete(1)]
-      b = [Op.delete(3)]
+      a = [Op.retain(2), Op.delete(1, %{"author" => "one"})]
+      b = [Op.delete(3, %{"author" => "two"})]
 
-      assert Delta.transform(a, b, false) == [Op.delete(2)]
+      assert Delta.transform(a, b, false) == [Op.delete(2, %{"author" => "two"})]
       assert Delta.transform(b, a, false) == []
     end
   end

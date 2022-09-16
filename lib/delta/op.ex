@@ -194,8 +194,8 @@ defmodule Delta.Op do
     end
   end
 
-  defp take_partial(%{"delete" => full}, length, _opts) do
-    {delete(length), delete(full - length)}
+  defp take_partial(%{"delete" => full} = op, length, _opts) do
+    {delete(length, op["attributes"]), delete(full - length, op["attributes"])}
   end
 
   defp take_partial(%{"retain" => full} = op, length, _opts) do
