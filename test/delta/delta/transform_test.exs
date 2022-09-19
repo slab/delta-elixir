@@ -74,6 +74,13 @@ defmodule Tests.Delta.Transform do
       assert Delta.transform(a, b, true) == b
     end
 
+    test "retain + delete (with attributes)" do
+      a = [Op.retain(1, %{"color" => "blue"})]
+      b = [Op.delete(1, %{"foo" => true})]
+
+      assert Delta.transform(a, b, true) == b
+    end
+
     test "alternating edits" do
       a = [Op.retain(2), Op.insert("si"), Op.delete(5)]
       b = [Op.retain(1), Op.insert("e"), Op.delete(5), Op.retain(1), Op.insert("ow")]

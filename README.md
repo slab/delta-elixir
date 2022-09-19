@@ -180,6 +180,9 @@ Delta.transform(a, b)
 # ]
 ```
 
+Note that even though `delete` operations support attributes, it is only safe to
+use `transform` with deletes that don't have them.
+
 ### Invert
 
 Returns an inverted delta that has the opposite effect of against a base document delta.
