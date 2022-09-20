@@ -3,7 +3,6 @@ defmodule Delta.Op do
   alias Delta.Utils
 
   def new(action, value, attr \\ false)
-  def new("delete", length, _attr), do: %{"delete" => length}
 
   def new(action, value, %{} = attr) when map_size(attr) > 0 do
     %{action => value, "attributes" => attr}
@@ -13,7 +12,7 @@ defmodule Delta.Op do
 
   def insert(value, attr \\ false), do: new("insert", value, attr)
   def retain(value, attr \\ false), do: new("retain", value, attr)
-  def delete(value), do: new("delete", value)
+  def delete(value, attr \\ false), do: new("delete", value, attr)
 
   def has_attributes?(%{"attributes" => %{}}), do: true
   def has_attributes?(_), do: false
