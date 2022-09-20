@@ -13,7 +13,7 @@ defmodule Delta.MixProject do
       # Project
       app:            @app,
       version:        @version,
-      elixir:         "~> 1.10",
+      elixir:         "~> 1.13",
       description:    description(),
       package:        package(),
       deps:           deps(),
