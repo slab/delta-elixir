@@ -3,7 +3,7 @@ defmodule Delta.EmbedHandler do
   @type embed :: map()
 
   @callback name() :: binary()
-  @callback compose(embed(), embed(), keep_nil? :: boolean()) :: embed()
-  @callback transform(embed(), embed(), priority? :: boolean()) :: embed()
-  @callback invert(embed(), embed()) :: embed()
+  @callback compose(any(), any(), keep_nil? :: boolean()) :: embed()
+  @callback transform(any(), any(), priority? :: boolean()) :: embed()
+  @callback invert(any(), any()) :: embed()
 end
