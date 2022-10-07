@@ -1,7 +1,7 @@
 defmodule Delta do
   alias Delta.{Attr, Op}
 
-  @type t :: list(Op.t)
+  @type t :: list(Op.t())
 
   @spec get_handler!(atom) :: module
   def get_handler!(embed_type) do
@@ -28,12 +28,11 @@ defmodule Delta do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
-  @spec compose_all(t) :: t
+  @spec compose_all([t]) :: t
   def compose_all(deltas) do
     Enum.reduce(deltas, [], &compose(&2, &1))
   end
 
-  @spec do_compose(t, t, t) :: t
   defp do_compose(result, [], []), do: result
 
   defp do_compose(result, [], [op | delta]) do
@@ -91,7 +90,7 @@ defmodule Delta do
   end
 
   @spec push(t, false) :: t
-  @spec push(t, Op.t) :: t
+  @spec push(t, Op.t()) :: t
   def push(delta, false), do: delta
 
   def push([], op) do
@@ -111,7 +110,6 @@ defmodule Delta do
     end
   end
 
-  @spec do_push(Op.t, Op.t) :: Op.t | nil
   defp do_push(op, %{"delete" => 0}), do: op
   defp do_push(op, %{"insert" => ""}), do: op
   defp do_push(op, %{"retain" => 0}), do: op
@@ -179,7 +177,7 @@ defmodule Delta do
     middle
   end
 
-  @spec split(t, non_neg_integer | fun, Keyword.t) :: {t, t}
+  @spec split(t, non_neg_integer | fun, Keyword.t()) :: {t, t}
   def split(delta, index, opts \\ [])
 
   def split(delta, 0, _), do: {[], delta}
@@ -206,7 +204,6 @@ defmodule Delta do
     do_split([], delta, func, nil, opts)
   end
 
-  @spec do_split(t, [], any, any, any) :: {t, t}
   defp do_split(passed, [], _, _, _), do: {passed, []}
 
   defp do_split(passed, remaining, func, context, opts) when is_function(func, 1) do
@@ -273,8 +270,6 @@ defmodule Delta do
     delta |> chop() |> Enum.reverse()
   end
 
-  @spec do_transform(non_neg_integer, non_neg_integer, t, boolean) :: non_neg_integer
-  @spec do_transform(t, t, t, boolean) :: t
   defp do_transform(offset, index, _, _) when is_integer(index) and offset > index, do: index
   defp do_transform(_, index, [], _) when is_integer(index), do: index
 
@@ -388,7 +383,6 @@ defmodule Delta do
     |> Enum.reverse()
   end
 
-  @spec do_invert_slice(Op.t, Op.t, t) :: t
   defp do_invert_slice(op, base_op, inverted) do
     cond do
       Op.delete?(op) ->
