@@ -222,10 +222,6 @@ defmodule Delta do
 
       index ->
         case Op.take(first, index, opts) do
-          # TODO: this seems unreachable according to Dialyzer
-          {false, right} ->
-            {Enum.reverse(passed), [right | remaining]}
-
           {left, false} ->
             {Enum.reverse([left | passed]), remaining}
 
