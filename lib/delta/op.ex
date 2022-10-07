@@ -8,11 +8,11 @@ defmodule Delta.Op do
   @typedoc """
   Stand-in type while operators are keyed with String.t() instead of Atom.t()
 
-  `%{insert: bitstring() | EmbedHandler.embed(), ...}`
+  `%{insert: String.t() | EmbedHandler.embed(), ...}`
   """
   @type insert_op :: %{required(insert_key) => insert_val, optional(attributes) => attributes_val}
   @typep insert_key :: String.t()
-  @typep insert_val :: bitstring() | EmbedHandler.embed()
+  @typep insert_val :: String.t() | EmbedHandler.embed()
 
   @typedoc """
   Stand-in type while operators are keyed with String.t() instead of Atom.t()
@@ -23,13 +23,15 @@ defmodule Delta.Op do
   @typep retain_key :: String.t()
   @typep retain_val :: pos_integer() | EmbedHandler.embed()
 
-
   @typedoc """
   Stand-in type while operators are keyed with String.t() instead of Atom.t()
 
   `%{delete: pos_integer()}`
   """
-  @type delete_op :: %{required(delete_key) => pos_integer}
+  @type delete_op :: %{
+          required(delete_key) => pos_integer,
+          optional(attributes) => attributes_val
+        }
   @typep delete_key :: String.t()
   @typep delete_val :: pos_integer()
 
@@ -168,7 +170,8 @@ defmodule Delta.Op do
     {composed, a, b}
   end
 
-  @spec transform(non_neg_integer, non_neg_integer, t, boolean) :: {non_neg_integer, non_neg_integer}
+  @spec transform(non_neg_integer, non_neg_integer, t, boolean) ::
+          {non_neg_integer, non_neg_integer}
   def transform(offset, index, op, priority) when is_integer(index) do
     length = size(op)
 
@@ -222,7 +225,7 @@ defmodule Delta.Op do
     {op1, a, op2, b}
   end
 
-  @spec take_partial(t, non_neg_integer, Keyword.t) :: {t, t}
+  @spec take_partial(t, non_neg_integer, Keyword.t()) :: {t, t}
   defp take_partial(op, 0, _opts), do: {insert("", op["attributes"]), op}
 
   defp take_partial(%{"insert" => text} = op, len, opts) do
