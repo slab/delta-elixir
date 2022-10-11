@@ -1,7 +1,7 @@
 defmodule Tests.Op do
   use ExUnit.Case, async: true
-
   alias Delta.Op
+  doctest Op
 
   describe ".compose/2 : retain + delete" do
     test "retain + delete" do
