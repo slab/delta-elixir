@@ -18,16 +18,26 @@ defmodule Delta do
   Returns a new Delta that is equivalent to applying the operations of one Delta, followed by another Delta
 
   ## Examples
-    iex> a = [Op.insert("abc")]
-    iex> b = [Op.retain(1), Op.delete(1)]
-    iex> Delta.compose(a, b)
-    [%{"insert" => "ac"}]
+      iex> a = [Op.insert("abc")]
+      iex> b = [Op.retain(1), Op.delete(1)]
+      iex> Delta.compose(a, b)
+      [%{"insert" => "ac"}]
   """
   @spec compose(t, t) :: t
   def compose(left, right) do
     [] |> do_compose(left, right) |> chop() |> Enum.reverse()
   end
 
+  @doc ~S"""
+  Returns a new Delta that is equivalent to applying Deltas one by one
+
+  ## Examples
+      iex> a = [Op.insert("ac")]
+      iex> b = [Op.retain(1), Op.insert("b")]
+      iex> c = [Op.delete(1)]
+      iex> Delta.compose_all([a, b, c])
+      [%{"insert" => "bc"}]
+  """
   @spec compose_all([t]) :: t
   def compose_all(deltas) do
     Enum.reduce(deltas, [], &compose(&2, &1))
@@ -68,6 +78,14 @@ defmodule Delta do
   defp chop([%{"retain" => n} = op | delta]) when is_number(n) and map_size(op) == 1, do: delta
   defp chop(delta), do: delta
 
+  @doc ~S"""
+  Compacts Delta to satisfy [compactness](https://quilljs.com/guides/designing-the-delta-format/#compact) requirement.
+
+  ## Examples
+      iex> delta = [Op.insert("Hel"), Op.insert("lo"), Op.insert("World", %{"bold" => true})]
+      iex> Delta.compact(delta)
+      [%{"insert" => "Hello"}, %{"insert" => "World", "attributes" => %{"bold" => true}}]
+  """
   @spec compact(t) :: t
   def compact(delta) do
     delta
@@ -75,6 +93,15 @@ defmodule Delta do
     |> Enum.reverse()
   end
 
+  @doc ~S"""
+  Concatenates two Deltas.
+
+  ## Examples
+      iex> a = [Op.insert("Hel")]
+      iex> b = [Op.insert("lo")]
+      iex> Delta.concat(a, b)
+      [%{"insert" => "Hello"}]
+  """
   @spec concat(t, t) :: t
   def concat(left, []), do: left
   def concat([], right), do: right
@@ -89,6 +116,25 @@ defmodule Delta do
     left ++ right
   end
 
+  @doc ~S"""
+  Pushes an operation to a reversed Delta honouring semantics.
+
+  Note: that reversed delta does not represent a reversed text, but rather a list
+  of operations that was naively reversed during programmatic manipulations.
+  This function is normally only used by other functions which reverse the list
+  back in the end.
+
+  ## Examples
+      iex> delta = [Op.insert("World", %{"italic" => true}), Op.insert("Hello", %{"bold" => true})]
+      iex> op = Op.insert("!")
+      iex> Delta.push(delta, op)
+      [%{"insert" => "!"}, %{"insert" => "World", "attributes" => %{"italic" => true}}, %{"insert" => "Hello", "attributes" => %{"bold" => true}}]
+
+      iex> delta = [Op.insert("World"), Op.insert("Hello", %{"bold" => true})]
+      iex> op = Op.insert("!")
+      iex> Delta.push(delta, op)
+      [%{"insert" => "World!"}, %{"insert" => "Hello", "attributes" => %{"bold" => true}}]
+  """
   @spec push(t, false) :: t
   @spec push(t, Op.t()) :: t
   def push(delta, false), do: delta
@@ -156,6 +202,14 @@ defmodule Delta do
 
   defp do_push(_, _), do: nil
 
+  @doc ~S"""
+  Returns the size of delta.
+
+  ## Examples
+      iex> delta = [Op.insert("abc"), Op.retain(2), Op.delete(1)]
+      iex> Delta.size(delta)
+      6
+  """
   @spec size(t) :: non_neg_integer
   def size(delta) do
     Enum.reduce(delta, 0, fn op, sum ->
@@ -163,6 +217,21 @@ defmodule Delta do
     end)
   end
 
+  @doc ~S"""
+  Attempts to take `len` characters starting from `index`.
+
+  Note: note that due to the way it's implemented this operation can potentially
+  raise if the resulting text isn't a valid UTF-8 encoded string
+
+  ## Examples
+      iex> delta = [Op.insert("Hello World")]
+      iex> Delta.slice(delta, 6, 3)
+      [%{"insert" => "Wor"}]
+
+      iex> delta = [Op.insert("01🙋45")]
+      iex> Delta.slice(delta, 1, 2)
+      ** (RuntimeError) Encoding failed in take_partial {"1🙋45", %{"insert" => "1🙋45"}, 2, {:incomplete, "1", <<216, 61>>}, {:error, "", <<222, 75, 0, 52, 0, 53>>}}
+  """
   @spec slice(t, non_neg_integer, non_neg_integer) :: t
   def slice(delta, index, len) do
     {_left, right} = split(delta, index)
@@ -170,6 +239,19 @@ defmodule Delta do
     middle
   end
 
+  @doc ~S"""
+  Takes `len` or fewer characters from `index` position. Variable `len` allows
+  to not cut things like emojis in half.
+
+  ## Examples
+      iex> delta = [Op.insert("Hello World")]
+      iex> Delta.slice_max(delta, 6, 3)
+      [%{"insert" => "Wor"}]
+
+      iex> delta = [Op.insert("01🙋45")]
+      iex> Delta.slice_max(delta, 1, 2)
+      [%{"insert" => "1"}]
+  """
   @spec slice_max(t, non_neg_integer, non_neg_integer) :: t
   def slice_max(delta, index, len) do
     {_left, right} = split(delta, index, align: true)
@@ -177,6 +259,23 @@ defmodule Delta do
     middle
   end
 
+  @doc ~S"""
+  Splits delta at the given index.
+
+  ## Options
+
+    * `:align` - when `true`, allow moving index left if
+      we're likely to split a grapheme otherwise.
+
+  ## Examples
+      iex> delta = [Op.insert("Hello World")]
+      iex> Delta.split(delta, 5)
+      {[%{"insert" => "Hello"}], [%{"insert" => " World"}]}
+
+      iex> delta = [Op.insert("01🙋45")]
+      iex> Delta.split(delta, 3, align: true)
+      {[%{"insert" => "01"}], [%{"insert" => "🙋45"}]}
+  """
   @spec split(t, non_neg_integer | fun, Keyword.t()) :: {t, t}
   def split(delta, index, opts \\ [])
 
@@ -232,12 +331,12 @@ defmodule Delta do
   end
 
   @doc ~S"""
-    Transforms given delta against another's operations.
+  Transforms given delta against another's operations.
 
-    This accepts an optional priority argument (default: false), used to break ties.
-    If true, the first delta takes priority over other, that is, its actions are considered to happen "first."
+  This accepts an optional priority argument (default: false), used to break ties.
+  If true, the first delta takes priority over other, that is, its actions are considered to happen "first."
 
-    ## Examples
+  ## Examples
       iex> a = [Op.insert("a")]
       iex> b = [Op.insert("b"), Op.retain(5), Op.insert("c")]
       iex> Delta.transform(a, b, true)

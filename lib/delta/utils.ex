@@ -1,4 +1,7 @@
 defmodule Delta.Utils do
+  @moduledoc false
+
+  @spec slices_likely_cut_emoji?(String.t(), String.t()) :: boolean()
   def slices_likely_cut_emoji?(left, right) do
     left
     |> to_charlist()

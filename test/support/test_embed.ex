@@ -1,4 +1,5 @@
 defmodule Delta.Support.TestEmbed do
+  @moduledoc false
   @behaviour Delta.EmbedHandler
 
   @impl true

@@ -1,5 +1,7 @@
 defmodule Tests.Delta.Attr do
   use Delta.Support.Case, async: false
+  alias Delta.Attr
+  doctest Attr
 
   @attr %{bold: true, color: "red"}
 

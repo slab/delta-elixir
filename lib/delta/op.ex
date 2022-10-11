@@ -47,6 +47,15 @@ defmodule Delta.Op do
   @type attributes :: %{required(String.t()) => attributes_val}
   @typep attributes_val :: map() | false
 
+  @doc ~S"""
+  Create a new operation.
+
+  Note that operations _are_ maps, and not structs.
+
+  ## Examples
+      iex> Op.new("insert", "Hello", %{"bold" => true})
+      %{"insert" => "Hello", "attributes" => %{"bold" => true}}
+  """
   @spec new(action :: operation, value :: operation_val, attr :: attributes_val) :: t
   def new(action, value, attr \\ false)
 
@@ -56,19 +65,66 @@ defmodule Delta.Op do
 
   def new(action, value, _attr), do: %{action => value}
 
+  @doc ~S"""
+  A shorthand for `new("insert", value, attributes)`. See `new/3`.
+
+  ## Examples
+      iex> Op.insert("Hello", %{"bold" => true})
+      %{"insert" => "Hello", "attributes" => %{"bold" => true}}
+  """
   @spec insert(value :: insert_val, attr :: attributes_val) :: insert_op
   def insert(value, attr \\ false), do: new("insert", value, attr)
 
+  @doc ~S"""
+  A shorthand for `new("retain", value, attributes)`. See `new/3`.
+
+  ## Examples
+      iex> Op.retain(1, %{"bold" => true})
+      %{"retain" => 1, "attributes" => %{"bold" => true}}
+  """
   @spec retain(value :: retain_val, attr :: attributes_val) :: retain_op
   def retain(value, attr \\ false), do: new("retain", value, attr)
 
+  @doc ~S"""
+  A shorthand for `new("delete", value, attributes)`. See `new/3`.
+
+  ## Examples
+      iex> Op.delete(1, %{"bold" => true})
+      %{"delete" => 1, "attributes" => %{"bold" => true}}
+  """
   @spec delete(value :: delete_val, attr :: attributes_val) :: delete_op
   def delete(value, attr \\ false), do: new("delete", value, attr)
 
+  @doc ~S"""
+  Returns true if operation has attributes
+
+  ## Examples
+      iex> Op.has_attributes?(%{"insert" => "Hello", "attributes" => %{"bool" => true}})
+      true
+
+      iex> Op.has_attributes?(%{"insert" => "Hello"})
+      false
+  """
   @spec has_attributes?(any) :: boolean
   def has_attributes?(%{"attributes" => %{}}), do: true
   def has_attributes?(_), do: false
 
+  @doc ~S"""
+  Returns true if operation is of type `type`. Optionally check against more specific `value_type`.
+
+  ## Examples
+      iex> Op.insert("Hello") |> Op.type?("insert")
+      true
+
+      iex> Op.insert("Hello") |> Op.type?("insert", :string)
+      true
+
+      iex> Op.insert("Hello") |> Op.type?("insert", :number)
+      false
+
+      iex> Op.retain(1) |> Op.type?("retain", :number)
+      true
+  """
   @spec type?(op :: t, action :: any, value_type :: any) :: boolean
   def type?(op, action, value_type \\ nil)
   def type?(%{} = op, action, nil) when is_map_key(op, action), do: true
@@ -77,15 +133,46 @@ defmodule Delta.Op do
   def type?(%{} = op, action, :number), do: is_integer(op[action])
   def type?(%{}, _action, _value_type), do: false
 
+  @doc ~S"""
+  A shorthand for `type?(op, "insert", type)`. See `type?/3`.
+
+  ## Examples
+      iex> Op.insert("Hello") |> Op.insert?()
+      true
+  """
   @spec insert?(op :: t, type :: any) :: boolean
   def insert?(op, type \\ nil), do: type?(op, "insert", type)
 
+  @doc ~S"""
+  A shorthand for `type?(op, "delete", type)`. See `type?/3`.
+
+  ## Examples
+      iex> Op.delete(1) |> Op.delete?()
+      true
+  """
   @spec delete?(op :: t, type :: any) :: boolean
   def delete?(op, type \\ nil), do: type?(op, "delete", type)
 
+  @doc ~S"""
+  A shorthand for `type?(op, "insert", type)`. See `type?/3`.
+
+  ## Examples
+      iex> Op.retain(1) |> Op.retain?()
+      true
+  """
   @spec retain?(op :: t, type :: any) :: boolean
   def retain?(op, type \\ nil), do: type?(op, "retain", type)
 
+  @doc ~S"""
+  Returns text size.
+
+  ## Examples
+      iex> Op.text_size("Hello")
+      5
+
+      iex> Op.text_size("🏴󠁧󠁢󠁳󠁣󠁴󠁿")
+      14
+  """
   @spec text_size(text :: binary) :: non_neg_integer
   def text_size(text) do
     text
@@ -94,12 +181,40 @@ defmodule Delta.Op do
     |> div(2)
   end
 
+  @doc ~S"""
+  Returns operation size.
+
+  ## Examples
+      iex> Op.insert("Hello") |> Op.size()
+      5
+
+      iex> Op.retain(3) |> Op.size()
+      3
+  """
   @spec size(t) :: non_neg_integer
   def size(%{"insert" => text}) when is_binary(text), do: text_size(text)
   def size(%{"delete" => len}) when is_integer(len), do: len
   def size(%{"retain" => len}) when is_integer(len), do: len
   def size(_op), do: 1
 
+  @doc ~S"""
+  Takes `length` characters from an operation and returns it together with the
+  remaining part in a tuple.
+
+  ## Options
+
+    * `:align` - when `true`, allow moving index left if
+      we're likely to split a grapheme otherwise.
+
+  ## Examples
+      iex> Op.insert("Hello") |> Op.take(3)
+      {%{"insert" => "Hel"}, %{"insert" => "lo"}}
+
+      iex> assert_raise RuntimeError, fn -> Op.insert("🏴󠁧󠁢󠁳󠁣󠁴󠁿") |> Op.take(1) end
+
+      iex> Op.insert("🏴󠁧󠁢󠁳󠁣󠁴󠁿") |> Op.take(1, align: true)
+      {%{"insert" => ""}, %{"insert" => "🏴󠁧󠁢󠁳󠁣󠁴󠁿"}}
+  """
   @spec take(op :: t, length :: non_neg_integer, opts :: Keyword.t()) :: {t, t | boolean}
   def take(op, length, opts \\ [])
 
@@ -114,6 +229,16 @@ defmodule Delta.Op do
     end
   end
 
+  @doc ~S"""
+  Gets two embeds' data. An embed is always a [one-key map](https://quilljs.com/docs/delta/#embeds)
+
+  ## Examples
+      iex> Op.get_embed_data!(
+      ...>   %{"image" => "https://quilljs.com/assets/images/icon.png"},
+      ...>   %{"image" => "https://quilljs.com/assets/images/icon2.png"}
+      ...> )
+      {"image", "https://quilljs.com/assets/images/icon.png", "https://quilljs.com/assets/images/icon2.png"}
+  """
   @spec get_embed_data!(map, map) :: {any, any, any}
   def get_embed_data!(a, b) do
     cond do

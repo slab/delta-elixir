@@ -1,5 +1,6 @@
 defmodule Tests.Delta do
   use Delta.Support.Case, async: true
+  doctest Delta, only: [compact: 1, concat: 2, push: 2, size: 1, slice: 3, slice_max: 3, split: 3]
 
   # NOTE: {compose, transform, invert} tests are in their
   # dedicated test suites under delta/

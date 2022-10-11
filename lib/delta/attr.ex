@@ -12,7 +12,7 @@ defmodule Delta.Attr do
     end
   end
 
-  @spec transform(a :: maybe_map, b :: maybe_map, any) :: boolean | map
+  @spec transform(a :: maybe_map, b :: maybe_map, priority :: boolean) :: boolean | map
   def transform(a, b, _) when not is_map(a), do: b
   def transform(_, b, _) when not is_map(b), do: false
   def transform(_, b, false), do: b
