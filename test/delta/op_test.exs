@@ -38,6 +38,14 @@ defmodule Tests.Op do
 
       assert Op.compose(a, b) == {Op.delete(1), Op.retain(1, %{"foo" => true}), false}
     end
+
+    test "retain with attributes + bigger delete with attributes" do
+      a = Op.retain(1, %{"foo" => true})
+      b = Op.delete(2, %{"bar" => true})
+
+      assert Op.compose(a, b) ==
+               {Op.delete(1, %{"bar" => true}), false, Op.delete(1, %{"bar" => true})}
+    end
   end
 
   describe ".compose/2 : retain + retain" do

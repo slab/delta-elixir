@@ -278,6 +278,24 @@ defmodule Tests.Delta.Compose do
 
       assert Delta.compose(a, b) == expected
     end
+
+    test "overlapping delete and retain" do
+      a = [
+        Op.retain(1),
+        Op.retain(2, %{"bold" => true, "author" => "user1"})
+      ]
+
+      b = [
+        Op.retain(2),
+        Op.delete(2, %{"author" => "user2"})
+      ]
+
+      assert Delta.compose(a, b) == [
+               Op.retain(1),
+               Op.retain(1, %{"bold" => true, "author" => "user1"}),
+               Op.delete(2, %{"author" => "user2"})
+             ]
+    end
   end
 
   describe ".compose/2 (custom embeds)" do
