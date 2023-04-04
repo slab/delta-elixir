@@ -492,4 +492,102 @@ defmodule Delta do
         inverted
     end
   end
+
+  @doc ~S"""
+  Returns a delta representing the difference between two documents.
+
+  ## Examples
+      iex> a = [Op.insert("Hello")]
+      iex> b = [Op.insert("Hello!")]
+      iex> diff = Delta.diff(a, b)
+      [
+        %{"retain" => 5},
+        %{"insert" => "!"}
+      ]
+      iex> Delta.compose(a, diff) == b
+      true
+  """
+  @spec diff(t, t) :: t
+  def diff(base, other)
+
+  def diff(base, other) when base == other, do: []
+
+  def diff(base, other) do
+    base_string = string_to_diff(base)
+    other_string = string_to_diff(other)
+    diff = Dmp.Diff.main(base_string, other_string)
+
+    do_diff(base, other, diff, [], nil, 0)
+  end
+
+  defp string_to_diff(delta) do
+    delta
+    |> Enum.map(fn
+      %{"insert" => str} when is_binary(str) ->
+        str
+
+      %{"insert" => data} when not is_nil(data) ->
+        <<0>>
+
+      _ ->
+        raise "Delta.diff called with non-document"
+    end)
+    |> Enum.join()
+  end
+
+  defp do_diff(_, _, [], delta, _, 0) do
+    delta
+    |> chop()
+    |> Enum.reverse()
+  end
+
+  defp do_diff(base, other, [{action, str} | rest_diffs], delta, _cur_action, 0) do
+    do_diff(base, other, rest_diffs, delta, action, Op.text_size(str))
+  end
+
+  defp do_diff(base, [first | rest], diffs, delta, :insert, len) do
+    op_len = min(Op.size(first), len)
+    {op, remaining} = Op.take(first, op_len)
+
+    do_diff(base, push(rest, remaining), diffs, push(delta, op), :insert, len - op_len)
+  end
+
+  defp do_diff([first | rest], other, diffs, delta, :delete, len) do
+    op_len = min(Op.size(first), len)
+    {_op, remaining} = Op.take(first, op_len)
+
+    do_diff(
+      push(rest, remaining),
+      other,
+      diffs,
+      push(delta, Op.delete(op_len)),
+      :delete,
+      len - op_len
+    )
+  end
+
+  defp do_diff([base_first | base_rest], [other_first | other_rest], diffs, delta, :equal, len) do
+    op_len = Enum.min([Op.size(base_first), Op.size(other_first), len])
+    {base_op, base_remaining} = Op.take(base_first, op_len)
+    {other_op, other_remaining} = Op.take(other_first, op_len)
+
+    base = push(base_rest, base_remaining)
+    other = push(other_rest, other_remaining)
+
+    case {base_op, other_op} do
+      {%{"insert" => str}, %{"insert" => str}} ->
+        attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
+        delta = push(delta, Op.retain(op_len, attrs))
+
+        do_diff(base, other, diffs, delta, :equal, len - op_len)
+
+      _ ->
+        delta =
+          delta
+          |> push(Op.delete(op_len))
+          |> push(other_op)
+
+        do_diff(base, other, diffs, delta, :equal, len - op_len)
+    end
+  end
 end
