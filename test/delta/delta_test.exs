@@ -243,6 +243,7 @@ defmodule Tests.Delta do
       b = [Op.insert("AB")]
 
       assert [Op.retain(1), Op.insert("B")] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "delete" do
@@ -250,6 +251,7 @@ defmodule Tests.Delta do
       b = [Op.insert("A")]
 
       assert [Op.retain(1), Op.delete(1)] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "retain" do
@@ -257,6 +259,7 @@ defmodule Tests.Delta do
       b = [Op.insert("A")]
 
       assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "format" do
@@ -264,6 +267,7 @@ defmodule Tests.Delta do
       b = [Op.insert("A", %{"bold" => true})]
 
       assert [Op.retain(1, %{"bold" => true})] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "object attributes" do
@@ -271,6 +275,7 @@ defmodule Tests.Delta do
       b = [Op.insert("A", %{"font" => %{"family" => "Helvetica", "size" => "15px"}})]
 
       assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "embed integer match" do
@@ -278,6 +283,7 @@ defmodule Tests.Delta do
       b = [Op.insert(%{"embed" => 1})]
 
       assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "embed integer mismatch" do
@@ -285,6 +291,7 @@ defmodule Tests.Delta do
       b = [Op.insert(%{"embed" => 2})]
 
       assert [Op.delete(1), Op.insert(%{"embed" => 2})] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "embed object match" do
@@ -292,6 +299,7 @@ defmodule Tests.Delta do
       b = [Op.insert(%{"image" => "http://example.com"})]
 
       assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "embed object mismatch" do
@@ -299,6 +307,7 @@ defmodule Tests.Delta do
       b = [Op.insert(%{"image" => "http://example.com"})]
 
       assert [Op.delete(1), Op.insert(%{"image" => "http://example.com"})] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "embed object change" do
@@ -306,6 +315,7 @@ defmodule Tests.Delta do
       b = [Op.insert(%{"image" => "http://example.org"})]
 
       assert [Op.delete(1), Op.insert(%{"image" => "http://example.org"})] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "error on non-documents" do
@@ -325,6 +335,8 @@ defmodule Tests.Delta do
                Op.retain(1, %{"italic" => nil, "color" => "red"}),
                Op.delete(1)
              ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
     test "combination" do
@@ -338,6 +350,8 @@ defmodule Tests.Delta do
                Op.delete(3),
                Op.insert("og", %{"italic" => true})
              ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
     end
   end
 end

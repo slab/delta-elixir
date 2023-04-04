@@ -513,14 +513,14 @@ defmodule Delta do
   def diff(base, other) when base == other, do: []
 
   def diff(base, other) do
-    base_string = string_to_diff(base)
-    other_string = string_to_diff(other)
+    base_string = diffable_string(base)
+    other_string = diffable_string(other)
     diff = Dmp.Diff.main(base_string, other_string)
 
     do_diff(base, other, diff, [], nil, 0)
   end
 
-  defp string_to_diff(delta) do
+  defp diffable_string(delta) do
     delta
     |> Enum.map(fn
       %{"insert" => str} when is_binary(str) ->
