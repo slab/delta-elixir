@@ -343,12 +343,11 @@ defmodule Tests.Delta do
       a = [Op.insert("Bad", %{"color" => "red"}), Op.insert("cat", %{"color" => "blue"})]
       b = [Op.insert("Good", %{"bold" => true}), Op.insert("dog", %{"italic" => true})]
 
+      # semantic cleanup simplifies this diff
       assert [
-               Op.delete(2),
+               Op.delete(6),
                Op.insert("Good", %{"bold" => true}),
-               Op.retain(1, %{"italic" => true, "color" => nil}),
-               Op.delete(3),
-               Op.insert("og", %{"italic" => true})
+               Op.insert("dog", %{"italic" => true})
              ] == Delta.diff(a, b)
 
       assert Delta.compose(a, Delta.diff(a, b)) == b

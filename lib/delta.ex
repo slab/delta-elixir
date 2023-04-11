@@ -515,7 +515,11 @@ defmodule Delta do
   def diff(base, other) do
     base_string = diffable_string(base)
     other_string = diffable_string(other)
-    diff = Dmp.Diff.main(base_string, other_string)
+
+    diff =
+      base_string
+      |> Dmp.Diff.main(other_string)
+      |> Dmp.Diff.cleanup_semantic()
 
     do_diff(base, other, diff, [], nil, 0)
   end
