@@ -48,7 +48,10 @@ defmodule Delta.MixProject do
 
   # Dependencies
   defp deps do
-    [{:ex_doc, ">= 0.0.0", only: :dev, runtime: false}]
+    [
+      {:diff_match_patch, "~> 0.1.0"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
   end
 
 

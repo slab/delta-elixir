@@ -72,4 +72,20 @@ defmodule Delta.Attr do
   defp merge(a, b, true) do
     Map.merge(a, b)
   end
+
+  @spec diff(a :: maybe_map, b :: maybe_map) :: map
+  def diff(a, b) do
+    a = a || %{}
+    b = b || %{}
+
+    keys = MapSet.new(Map.keys(a) ++ Map.keys(b))
+
+    Enum.reduce(keys, %{}, fn key, attrs ->
+      if a[key] != b[key] do
+        Map.put(attrs, key, b[key])
+      else
+        attrs
+      end
+    end)
+  end
 end
