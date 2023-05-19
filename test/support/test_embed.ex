@@ -13,4 +13,7 @@ defmodule Delta.Support.TestEmbed do
 
   @impl true
   defdelegate invert(a, b), to: Delta
+
+  @impl true
+  defdelegate diff(a, b), to: Delta
 end

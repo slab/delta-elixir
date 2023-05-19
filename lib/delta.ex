@@ -3,12 +3,16 @@ defmodule Delta do
 
   @type t :: list(Op.t())
 
-  @spec get_handler!(atom) :: module
-  def get_handler!(embed_type) do
+  @spec get_handler(atom) :: module | nil
+  def get_handler(embed_type) do
     :delta
     |> Application.get_env(:custom_embeds, [])
     |> Enum.find(&(&1.name == embed_type))
-    |> case do
+  end
+
+  @spec get_handler!(atom) :: module
+  def get_handler!(embed_type) do
+    case get_handler(embed_type) do
       nil -> raise("no embed handler configured for #{inspect(embed_type)}")
       handler -> handler
     end
@@ -578,20 +582,29 @@ defmodule Delta do
     base = push(base_rest, base_remaining)
     other = push(other_rest, other_remaining)
 
-    case {base_op, other_op} do
-      {%{"insert" => str}, %{"insert" => str}} ->
-        attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
-        delta = push(delta, Op.retain(op_len, attrs))
+    delta =
+      case {base_op, other_op} do
+        {%{"insert" => str}, %{"insert" => str}} ->
+          attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
+          push(delta, Op.retain(op_len, attrs))
 
-        do_diff(base, other, diffs, delta, :equal, len - op_len)
+        {%{"insert" => base_insert}, %{"insert" => other_insert}}
+        when is_map(base_insert) and is_map(other_insert) ->
+          {embed_type, base_embed, other_embed} = Op.get_embed_data!(base_insert, other_insert)
 
-      _ ->
-        delta =
-          delta
-          |> push(Op.delete(op_len))
-          |> push(other_op)
+          case get_handler(embed_type) do
+            nil ->
+              delta
+              |> push(Op.delete(op_len))
+              |> push(other_op)
 
-        do_diff(base, other, diffs, delta, :equal, len - op_len)
-    end
+            handler ->
+              diff = handler.diff(base_embed, other_embed)
+              attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
+              push(delta, Op.retain(%{embed_type => diff}, attrs))
+          end
+      end
+
+    do_diff(base, other, diffs, delta, :equal, len - op_len)
   end
 end

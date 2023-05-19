@@ -68,10 +68,12 @@ defmodule Tests.Delta.Diff do
     end
 
     test "embed object mismatch" do
-      a = [Op.insert(%{"image" => "http://example.com", "alt" => "overwrite"})]
-      b = [Op.insert(%{"image" => "http://example.com"})]
+      a = [Op.insert(%{"image" => %{"url" => "http://example.com", "alt" => "overwrite"}})]
+      b = [Op.insert(%{"image" => %{"url" => "http://example.com"}})]
 
-      assert [Op.delete(1), Op.insert(%{"image" => "http://example.com"})] == Delta.diff(a, b)
+      assert [Op.delete(1), Op.insert(%{"image" => %{"url" => "http://example.com"}})] ==
+               Delta.diff(a, b)
+
       assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
@@ -113,6 +115,76 @@ defmodule Tests.Delta.Diff do
                Op.delete(6),
                Op.insert("Good", %{"bold" => true}),
                Op.insert("dog", %{"italic" => true})
+             ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+  end
+
+  describe ".diff/2 (custom embeds)" do
+    @describetag custom_embeds: [TestEmbed]
+
+    test "equal strings" do
+      a = [Op.insert("A")]
+      b = [Op.insert("A")]
+
+      assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    test "equal embeds" do
+      a = [Op.insert(%{"delta" => [Op.insert("hello")]})]
+      b = [Op.insert(%{"delta" => [Op.insert("hello")]})]
+
+      assert [] == Delta.diff(a, b)
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    test "basic embed diff" do
+      a = [Op.insert(%{"delta" => [Op.insert("hello world")]})]
+      b = [Op.insert(%{"delta" => [Op.insert("goodbye world")]})]
+
+      assert [
+               Op.retain(%{
+                 "delta" => [
+                   Op.delete(5),
+                   Op.insert("goodbye")
+                 ]
+               })
+             ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    test "embed diff with attribute changes" do
+      a = [
+        Op.insert(
+          %{"delta" => [Op.insert("hello world")]},
+          %{"bold" => true, "color" => "red"}
+        )
+      ]
+
+      b = [
+        Op.insert(
+          %{"delta" => [Op.insert("goodbye world")]},
+          %{"italic" => true, "color" => "yellow"}
+        )
+      ]
+
+      assert [
+               Op.retain(
+                 %{
+                   "delta" => [
+                     Op.delete(5),
+                     Op.insert("goodbye")
+                   ]
+                 },
+                 %{
+                   "bold" => nil,
+                   "italic" => true,
+                   "color" => "yellow"
+                 }
+               )
              ] == Delta.diff(a, b)
 
       assert Delta.compose(a, Delta.diff(a, b)) == b
