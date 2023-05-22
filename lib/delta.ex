@@ -584,7 +584,7 @@ defmodule Delta do
 
     delta =
       case {base_op, other_op} do
-        {%{"insert" => str}, %{"insert" => str}} ->
+        {%{"insert" => ins}, %{"insert" => ins}} ->
           attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
           push(delta, Op.retain(op_len, attrs))
 
