@@ -279,6 +279,10 @@ defmodule Delta do
       iex> delta = [Op.insert("01🙋45")]
       iex> Delta.split(delta, 3, align: true)
       {[%{"insert" => "01"}], [%{"insert" => "🙋45"}]}
+
+      iex> delta = [Op.insert("a"), Op.insert("b", %{"bold" => true})]
+      iex> Delta.split(delta, 3)
+      {[%{"insert" => "a"}, %{"insert" => "b", "attributes" => %{"bold" => true}}], []}
   """
   @spec split(t, non_neg_integer | fun, Keyword.t()) :: {t, t}
   def split(delta, index, opts \\ [])
@@ -307,7 +311,7 @@ defmodule Delta do
     do_split([], delta, func, nil, opts)
   end
 
-  defp do_split(passed, [], _, _, _), do: {passed, []}
+  defp do_split(passed, [], _, _, _), do: {Enum.reverse(passed), []}
 
   defp do_split(passed, remaining, func, context, opts) when is_function(func, 1) do
     do_split(passed, remaining, fn op, _ -> func.(op) end, context, opts)
