@@ -211,6 +211,27 @@ defmodule Tests.Delta do
     end
   end
 
+  describe ".split/3" do
+    test "split at op boundary" do
+      delta = [
+        Op.insert("hello"),
+        Op.insert(%{"code-embed" => []}),
+        Op.insert("world")
+      ]
+
+      # this splitter should split the delta immediately before the first embed
+      assert Delta.split(delta, fn
+               %{"insert" => text}, _ when is_binary(text) -> :cont
+               _, _ -> 0
+             end) ==
+               {[Op.insert("hello")],
+                [
+                  Op.insert(%{"code-embed" => []}),
+                  Op.insert("world")
+                ]}
+    end
+  end
+
   describe ".push/2" do
     test "push merge" do
       delta =

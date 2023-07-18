@@ -327,6 +327,9 @@ defmodule Delta do
       {:cont, context} ->
         do_split([first | passed], remaining, func, context, opts)
 
+      0 ->
+        {Enum.reverse(passed), [first | remaining]}
+
       index ->
         case Op.take(first, index, opts) do
           {left, false} ->
