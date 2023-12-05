@@ -122,7 +122,7 @@ defmodule Tests.Delta.Diff do
   end
 
   describe ".diff/2 (custom embeds)" do
-    @describetag custom_embeds: [TestEmbed]
+    @describetag custom_embeds: [TestEmbed, QuoteEmbed]
 
     test "equal strings" do
       a = [Op.insert("A")]
@@ -188,6 +188,27 @@ defmodule Tests.Delta.Diff do
              ] == Delta.diff(a, b)
 
       assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    test "different embeds" do
+      a = [Op.insert(%{"delta" => [Op.insert("hello world")]})]
+      b = [Op.insert(%{"quote" => [Op.insert("goodbye world")]})]
+
+      assert [
+               Op.delete(1),
+               Op.insert(%{"quote" => [Op.insert("goodbye world")]})
+             ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    test "embeds without handler diff attributes if equal" do
+      a = [Op.insert(%{"quote" => [Op.insert("hello world")]}, %{"author" => "A"})]
+      b = [Op.insert(%{"quote" => [Op.insert("hello world")]}, %{"author" => "B"})]
+
+      assert [
+               Op.retain(1, %{"author" => "B"})
+             ] == Delta.diff(a, b)
     end
   end
 end
