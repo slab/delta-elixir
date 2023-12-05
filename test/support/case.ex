@@ -6,7 +6,7 @@ defmodule Delta.Support.Case do
     quote do
       alias Delta
       alias Delta.{Op, Attr}
-      alias Delta.Support.TestEmbed
+      alias Delta.Support.{TestEmbed, QuoteEmbed}
     end
   end
 

@@ -597,18 +597,19 @@ defmodule Delta do
 
         {%{"insert" => base_insert}, %{"insert" => other_insert}}
         when is_map(base_insert) and is_map(other_insert) ->
-          {embed_type, base_embed, other_embed} = Op.get_embed_data!(base_insert, other_insert)
-
-          case get_handler(embed_type) do
-            nil ->
+          with [{base_embed_type, base_embed}] <- Map.to_list(base_insert),
+               [{other_embed_type, other_embed}] <- Map.to_list(other_insert),
+               true <- base_embed_type == other_embed_type,
+               handler = get_handler(base_embed_type),
+               true <- function_exported?(handler, :diff, 2) do
+            diff = handler.diff(base_embed, other_embed)
+            attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
+            push(delta, Op.retain(%{base_embed_type => diff}, attrs))
+          else
+            _ ->
               delta
               |> push(Op.delete(op_len))
               |> push(other_op)
-
-            handler ->
-              diff = handler.diff(base_embed, other_embed)
-              attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
-              push(delta, Op.retain(%{embed_type => diff}, attrs))
           end
       end
 
