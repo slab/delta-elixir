@@ -15,5 +15,15 @@ defmodule Delta.Support.TestEmbed do
   defdelegate invert(a, b), to: Delta
 
   @impl true
-  defdelegate diff(a, b), to: Delta
+  def diff(a, b) do
+    attr_diff = Delta.Attr.diff(a["attributes"], b["attributes"])
+
+    diff =
+      case Delta.diff(a["insert"]["delta"], b["insert"]["delta"]) do
+        [] -> 1
+        delta -> %{"delta" => delta}
+      end
+
+    [Delta.Op.retain(diff, attr_diff)]
+  end
 end

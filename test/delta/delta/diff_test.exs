@@ -122,7 +122,7 @@ defmodule Tests.Delta.Diff do
   end
 
   describe ".diff/2 (custom embeds)" do
-    @describetag custom_embeds: [TestEmbed, QuoteEmbed]
+    @describetag custom_embeds: [TestEmbed]
 
     test "equal strings" do
       a = [Op.insert("A")]
@@ -190,6 +190,7 @@ defmodule Tests.Delta.Diff do
       assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
+    @tag custom_embeds: [TestEmbed, QuoteEmbed]
     test "different embeds" do
       a = [Op.insert(%{"delta" => [Op.insert("hello world")]})]
       b = [Op.insert(%{"quote" => [Op.insert("goodbye world")]})]
@@ -202,6 +203,7 @@ defmodule Tests.Delta.Diff do
       assert Delta.compose(a, Delta.diff(a, b)) == b
     end
 
+    @tag custom_embeds: [QuoteEmbed]
     test "embeds without handler diff attributes if equal" do
       a = [Op.insert(%{"quote" => [Op.insert("hello world")]}, %{"author" => "A"})]
       b = [Op.insert(%{"quote" => [Op.insert("hello world")]}, %{"author" => "B"})]
@@ -209,6 +211,64 @@ defmodule Tests.Delta.Diff do
       assert [
                Op.retain(1, %{"author" => "B"})
              ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    @tag custom_embeds: [QuoteEmbed]
+    test "embeds without handler replaces whole operation if different content" do
+      a = [Op.insert(%{"quote" => [Op.insert("foo")]}, %{"author" => "A"})]
+      b = [Op.insert(%{"quote" => [Op.insert("bar")]}, %{"author" => "B"})]
+
+      assert [
+               Op.delete(1),
+               Op.insert(%{"quote" => [Op.insert("bar")]}, %{"author" => "B"})
+             ] == Delta.diff(a, b)
+    end
+
+    @tag custom_embeds: [__MODULE__.CaseInsensitiveEmbed]
+    test "embeds consider operations equal" do
+      # Let's imagine the embed is case-insensitive
+      a = [Op.insert(%{"delta" => [Op.insert("HELLO")]})]
+      b = [Op.insert(%{"delta" => [Op.insert("hello")]})]
+
+      assert [] == Delta.diff(a, b)
+
+      # The invariant breaks for obvious reasons
+      refute Delta.compose(a, Delta.diff(a, b)) == b
+    end
+
+    @tag custom_embeds: [__MODULE__.HomographEmbed]
+    test "embeds consider equal inserts as different" do
+      # Let's imagine the embed considers homographs as different words based on
+      # `meaning` attribute
+      a = [Op.insert(%{"delta" => [Op.insert("football", %{"meaning" => "american"})]})]
+      b = [Op.insert(%{"delta" => [Op.insert("football", %{"meaning" => "soccer"})]})]
+
+      assert [
+               Op.delete(1),
+               Op.insert(%{"delta" => [Op.insert("football", %{"meaning" => "soccer"})]})
+             ] == Delta.diff(a, b)
+
+      assert Delta.compose(a, Delta.diff(a, b)) == b
+    end
+  end
+
+  defmodule CaseInsensitiveEmbed do
+    def name, do: "delta"
+
+    def diff(%{"insert" => %{"delta" => [%{"insert" => "HELLO"}]}}, %{
+          "insert" => %{"delta" => [%{"insert" => "hello"}]}
+        }) do
+      []
+    end
+  end
+
+  defmodule HomographEmbed do
+    def name, do: "delta"
+
+    def diff(_, b) do
+      [Delta.Op.delete(1), b]
     end
   end
 end

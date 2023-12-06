@@ -590,29 +590,38 @@ defmodule Delta do
     other = push(other_rest, other_remaining)
 
     delta =
-      case {base_op, other_op} do
-        {%{"insert" => ins}, %{"insert" => ins}} ->
-          attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
-          push(delta, Op.retain(op_len, attrs))
-
+      {base_op, other_op}
+      |> case do
         {%{"insert" => base_insert}, %{"insert" => other_insert}}
         when is_map(base_insert) and is_map(other_insert) ->
-          with [{base_embed_type, base_embed}] <- Map.to_list(base_insert),
-               [{other_embed_type, other_embed}] <- Map.to_list(other_insert),
-               true <- base_embed_type == other_embed_type,
-               handler = get_handler(base_embed_type),
-               true <- function_exported?(handler, :diff, 2) do
-            diff = handler.diff(base_embed, other_embed)
-            attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
-            push(delta, Op.retain(%{base_embed_type => diff}, attrs))
-          else
-            _ ->
-              delta
-              |> push(Op.delete(op_len))
-              |> push(other_op)
-          end
+          diff_embeds(base_op, other_op)
+
+        _ ->
+          diff_simple_ops(base_op, other_op)
       end
+      |> Enum.reduce(delta, fn op, acc -> push(acc, op) end)
 
     do_diff(base, other, diffs, delta, :equal, len - op_len)
+  end
+
+  defp diff_embeds(base_op = %{"insert" => base_insert}, other_op = %{"insert" => other_insert}) do
+    with [{embed_type, _embed}] <- Map.to_list(base_insert),
+         [{^embed_type, _embed}] <- Map.to_list(other_insert),
+         handler = get_handler(embed_type),
+         true <- function_exported?(handler, :diff, 2) do
+      handler.diff(base_op, other_op)
+    else
+      _ ->
+        diff_simple_ops(base_op, other_op)
+    end
+  end
+
+  defp diff_simple_ops(base_op = %{"insert" => ins}, other_op = %{"insert" => ins}) do
+    attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
+    [Op.retain(Op.size(base_op), attrs)]
+  end
+
+  defp diff_simple_ops(base_op, other_op) do
+    [Op.delete(Op.size(base_op)), other_op]
   end
 end
