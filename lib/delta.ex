@@ -589,39 +589,30 @@ defmodule Delta do
     base = push(base_rest, base_remaining)
     other = push(other_rest, other_remaining)
 
-    delta =
-      {base_op, other_op}
-      |> case do
-        {%{"insert" => base_insert}, %{"insert" => other_insert}}
-        when is_map(base_insert) and is_map(other_insert) ->
-          diff_embeds(base_op, other_op)
-
+    ops_diff =
+      with %{"insert" => %{} = base_insert} <- base_op,
+           %{"insert" => %{} = other_insert} <- other_op,
+           [{embed_type, _embed}] <- Map.to_list(base_insert),
+           [{^embed_type, _embed}] <- Map.to_list(other_insert),
+           handler = get_handler(embed_type),
+           true <- function_exported?(handler, :diff, 2) do
+        handler.diff(base_op, other_op)
+      else
         _ ->
-          diff_simple_ops(base_op, other_op)
+          diff_ops_generic(base_op, other_op)
       end
-      |> Enum.reduce(delta, fn op, acc -> push(acc, op) end)
+
+    delta = Enum.reduce(ops_diff, delta, fn op, acc -> push(acc, op) end)
 
     do_diff(base, other, diffs, delta, :equal, len - op_len)
   end
 
-  defp diff_embeds(base_op = %{"insert" => base_insert}, other_op = %{"insert" => other_insert}) do
-    with [{embed_type, _embed}] <- Map.to_list(base_insert),
-         [{^embed_type, _embed}] <- Map.to_list(other_insert),
-         handler = get_handler(embed_type),
-         true <- function_exported?(handler, :diff, 2) do
-      handler.diff(base_op, other_op)
-    else
-      _ ->
-        diff_simple_ops(base_op, other_op)
-    end
-  end
-
-  defp diff_simple_ops(base_op = %{"insert" => ins}, other_op = %{"insert" => ins}) do
+  defp diff_ops_generic(base_op = %{"insert" => ins}, other_op = %{"insert" => ins}) do
     attrs = Delta.Attr.diff(base_op["attributes"], other_op["attributes"])
     [Op.retain(Op.size(base_op), attrs)]
   end
 
-  defp diff_simple_ops(base_op, other_op) do
+  defp diff_ops_generic(base_op, other_op) do
     [Op.delete(Op.size(base_op)), other_op]
   end
 end
