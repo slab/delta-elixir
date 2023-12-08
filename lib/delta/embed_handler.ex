@@ -58,7 +58,7 @@ defmodule Delta.EmbedHandler do
   @callback compose(any(), any(), keep_nil? :: boolean()) :: embed()
   @callback transform(any(), any(), priority? :: boolean()) :: embed()
   @callback invert(any(), any()) :: embed()
-  @callback diff(Delta.Op.t(), Delta.Op.t()) :: Delta.t()
+  @callback diff(Delta.Op.insert_op(), Delta.Op.insert_op()) :: Delta.t()
 
   @optional_callbacks diff: 2
 end
