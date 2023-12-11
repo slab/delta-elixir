@@ -519,6 +519,7 @@ defmodule Delta do
       iex> Delta.compose(a, diff) == b
       true
   """
+  @doc since: "0.4.0"
   @spec diff(t, t) :: t
   def diff(base, other)
 
