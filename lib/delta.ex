@@ -256,6 +256,7 @@ defmodule Delta do
       iex> Delta.slice_max(delta, 1, 2)
       [%{"insert" => "1"}]
   """
+  @doc since: "0.2.0"
   @spec slice_max(t, non_neg_integer, non_neg_integer) :: t
   def slice_max(delta, index, len) do
     {_left, right} = split(delta, index, align: true)

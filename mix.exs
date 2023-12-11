@@ -26,7 +26,7 @@ defmodule Delta.MixProject do
         source_url:   @github,
         homepage_url: @github,
         canonical:    "https://hexdocs.pm/#{@app}",
-        extras:       ["README.md"]
+        extras:       ["README.md", "CHANGELOG.md"]
       ]
     ]
   end
@@ -68,10 +68,11 @@ defmodule Delta.MixProject do
       name: @app,
       maintainers: ["Slab"],
       licenses: ["BSD-3-Clause"],
-      files: ~w(mix.exs lib README.md),
+      files: ~w(mix.exs lib README.md CHANGELOG.md),
       links: %{
         "Github" => @github,
-        "Delta.js" => "https://github.com/quilljs/delta"
+        "Delta.js" => "https://github.com/quilljs/delta",
+        "Changelog" => "https://hexdocs.pm/delta/changelog.html"
       }
     ]
   end
