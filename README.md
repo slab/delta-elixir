@@ -26,7 +26,7 @@ Add `delta` to your project dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:delta, "~> 0.3.0"}]
+  [{:delta, "~> 0.4.0"}]
 end
 ```
 

@@ -73,6 +73,7 @@ defmodule Delta.Attr do
     Map.merge(a, b)
   end
 
+  @doc since: "0.4.0"
   @spec diff(a :: maybe_map, b :: maybe_map) :: map
   def diff(a, b) do
     a = a || %{}
