@@ -529,7 +529,12 @@ defmodule Delta do
 
     diff =
       base_string
-      |> Dmp.Diff.main(other_string)
+      |> String.myers_difference(other_string)
+      |> Enum.map(fn
+        {:eq, str} -> {:equal, str}
+        {:del, str} -> {:delete, str}
+        {:ins, str} -> {:insert, str}
+      end)
       |> Dmp.Diff.cleanup_semantic()
 
     do_diff(base, other, diff, [], nil, 0)
