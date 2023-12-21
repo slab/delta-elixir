@@ -50,6 +50,7 @@ defmodule Delta.MixProject do
   defp deps do
     [
       {:diff_match_patch, "~> 0.2.0"},
+      {:diffy, "~> 1.1"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
