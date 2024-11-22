@@ -7,7 +7,7 @@ defmodule Delta do
   def get_handler(embed_type) do
     :delta
     |> Application.get_env(:custom_embeds, [])
-    |> Enum.find(&(&1.name == embed_type))
+    |> Enum.find(&(&1.name() == embed_type))
   end
 
   @spec get_handler!(atom) :: module
