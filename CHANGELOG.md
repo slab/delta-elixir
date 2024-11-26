@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.1 (2024-11-28)
+
+### Maintenances
+  * Address Elixir 1.17 warnings
+
 ## v0.4.0 (2024-04-22)
 
 ### Enhancements
