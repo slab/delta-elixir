@@ -210,6 +210,20 @@ base |> Delta.compose(change) |> Delta.compose(inverted) == base
 
 <br>
 
+## Global Library options
+
+In your application, these are settable in `config.exs` by doing:
+
+`config :delta, :<option>, <value>`
+
+### Compile-time
+`timeout`: timeout (in seconds) for the diffing operation to complete.  If you don't set this, there is no timeout.
+`diff_fast`: (boolean) if true, performs a diff that is faster but is a less optimal diff
+
+### Runtime
+
+`custom_embeds`: ... insert description here ...
+
 ## Contributing
 
 - [Fork][github-fork], Enhance, Send PR
