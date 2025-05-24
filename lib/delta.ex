@@ -519,6 +519,10 @@ defmodule Delta do
       iex> Delta.compose(a, diff) == b
       true
   """
+
+  @check_lines Application.compile_env(:delta, :diff_fast, false)
+  @timeout Application.compile_env(:delta, :diff_timeout, nil)
+
   @doc since: "0.4.0"
   @spec diff(t, t) :: t
   def diff(base, other)
@@ -531,10 +535,17 @@ defmodule Delta do
 
     diff =
       base_string
-      |> :diffy.diff(other_string)
+      |> Dmp.Diff.compute(other_string, @check_lines, deadline())
       |> Dmp.Diff.cleanup_semantic()
 
     do_diff(base, other, diff, [], nil, 0)
+  end
+
+  @compile {:inline, deadline: 0}
+  if @timeout do
+    defp deadline, do: :os.system_time(:millsecond) + round(@timeout * 1000)
+  else
+    defp deadline, do: :never
   end
 
   defp diffable_string(delta) do
