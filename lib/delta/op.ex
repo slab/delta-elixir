@@ -291,13 +291,12 @@ defmodule Delta.Op do
           attr = Attr.compose(op1["attributes"], op2["attributes"])
           insert(op1["insert"], attr)
 
-        {{action, type}, {"retain", :map}} ->
+        {{action, _}, {"retain", :map}} ->
           {embed_type, embed1, embed2} = get_embed_data!(op1[action], op2["retain"])
           handler = Delta.get_handler!(embed_type)
 
           composed_embed = %{embed_type => handler.compose(embed1, embed2, action == "retain")}
-          keep_nil? = action == "retain" && type == :number
-          attr = Attr.compose(op1["attributes"], op2["attributes"], keep_nil?)
+          attr = Attr.compose(op1["attributes"], op2["attributes"])
 
           new(action, composed_embed, attr)
 
