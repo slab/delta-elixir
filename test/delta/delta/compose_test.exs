@@ -337,4 +337,16 @@ defmodule Tests.Delta.Compose do
       assert Delta.compose(a, b) == expected
     end
   end
+
+  test "regression 6/4/2025" do
+    seq = [
+      %{"attributes" => %{"A" => "B"}, "insert" => "A"},
+      %{"insert" => "BC"},
+      %{"insert" => "E"},
+    ]
+
+    change = [%{"delete" => 2}]
+
+    assert [%{"insert" => "CE"}] = Delta.compose(seq, change)
+  end
 end
