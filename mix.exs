@@ -8,6 +8,7 @@ defmodule Delta.MixProject do
 
   def project do
     [
+      name: @name,
       app: @app,
       version: @version,
       elixir: "~> 1.18",
@@ -15,13 +16,17 @@ defmodule Delta.MixProject do
       package: package(),
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      name: @name,
       docs: [
         main: @name,
         source_url: @github,
         homepage_url: @github,
         canonical: "https://hexdocs.pm/#{@app}",
         extras: ["README.md", "CHANGELOG.md"]
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_add_apps: [:ex_unit],
+        list_unused_filters: true
       ]
     ]
   end
@@ -39,7 +44,8 @@ defmodule Delta.MixProject do
 
   defp deps do
     [
-      {:diff_match_patch, "~> 0.2"},
+      {:diff_match_patch, "~> 0.3"},
+      {:dialyxir, "~> 1.4.5", only: [:dev, :test], runtime: false},
       {:diffy, "~> 1.1"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
