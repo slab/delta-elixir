@@ -225,7 +225,7 @@ base |> Delta.compose(change) |> Delta.compose(inverted) == base
 [badge-downloads]: https://img.shields.io/hexpm/dt/delta.svg
 [hexpm]: https://hex.pm/packages/delta
 [github-build]: https://github.com/slab/delta-elixir/actions/workflows/ci.yaml
-[github-license]: https://github.com/slab/delta-elixir/blob/master/LICENSE
+[github-license]: https://github.com/slab/delta-elixir/blob/main/LICENSE
 [github-fork]: https://github.com/slab/delta-elixir/fork
 [docs]: https://hexdocs.pm/delta
 [wiki-ot]: https://en.wikipedia.org/wiki/Operational_transformation
