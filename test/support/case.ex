@@ -4,7 +4,6 @@ defmodule Delta.Support.Case do
 
   using do
     quote do
-      alias Delta
       alias Delta.Attr
       alias Delta.Op
       alias Delta.Support.MapEmbed

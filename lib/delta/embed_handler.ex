@@ -51,8 +51,7 @@ defmodule Delta.EmbedHandler do
         %{"retain" => %{"image" => "https://quilljs.com/assets/images/icon.png"}}
       ]
   """
-  @type t :: module()
-  @type embed :: map()
+  @type embed :: map() | list(map())
 
   @callback name() :: binary()
   @callback compose(any(), any(), keep_nil? :: boolean()) :: embed()
