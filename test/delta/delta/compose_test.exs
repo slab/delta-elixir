@@ -298,7 +298,7 @@ defmodule Tests.Delta.Compose do
     end
   end
 
-  describe ".compose/2 (custom embeds)" do
+  describe ".compose/2 (custom delta embed)" do
     @describetag custom_embeds: [TestEmbed]
 
     test "retain an embed with a number" do
@@ -329,8 +329,78 @@ defmodule Tests.Delta.Compose do
       assert Delta.compose(a, b) == expected
     end
 
+    test "retain newline with an embed" do
+      a = [Op.insert("\n")]
+      b = [Op.retain(%{"delta" => [Op.insert("b")]})]
+      expected = [Op.insert(%{"delta" => [Op.insert("b")]})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain string with an embed" do
+      a = [Op.insert("1\n2")]
+      b = [Op.retain(1), Op.retain(%{"delta" => [Op.insert("b")]})]
+      expected = [Op.insert("1"), Op.insert(%{"delta" => [Op.insert("b")]}), Op.insert("2")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
     test "delete a retain" do
       a = [Op.retain(%{"delta" => [Op.insert("a")]})]
+      b = [Op.delete(1)]
+      expected = [Op.delete(1)]
+
+      assert Delta.compose(a, b) == expected
+    end
+  end
+
+  describe ".compose/2 (custom map embed)" do
+    @describetag custom_embeds: [MapEmbed]
+
+    test "retain an embed with a number" do
+      a = [Op.insert(%{"map" => "image.png"})]
+      b = [Op.retain(1, %{"bold" => true})]
+      expected = [Op.insert(%{"map" => "image.png"}, %{"bold" => true})]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain a number with an embed" do
+      a = [Op.retain(10, %{"bold" => true})]
+      b = [Op.retain(%{"map" => "image.png"})]
+
+      expected = [
+        Op.retain(%{"map" => "image.png"}, %{"bold" => true}),
+        Op.retain(9, %{"bold" => true})
+      ]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "retain an embed with an embed" do
+      a = [Op.retain(%{"map" => "image1.png"})]
+      b = [Op.retain(%{"map" => "image2.png"})]
+
+      assert Delta.compose(a, b) == b
+    end
+
+    test "retain newline with an embed" do
+      a = [Op.insert("\n")]
+      b = [Op.retain(%{"map" => "image.png"})]
+
+      assert Delta.compose(a, b) == [Op.insert(%{"map" => "image.png"})]
+    end
+
+    test "retain string with an embed" do
+      a = [Op.insert("1\n2")]
+      b = [Op.retain(1), Op.retain(%{"map" => "image.png"})]
+      expected = [Op.insert("1"), Op.insert(%{"map" => "image.png"}), Op.insert("2")]
+
+      assert Delta.compose(a, b) == expected
+    end
+
+    test "delete a retain" do
+      a = [Op.retain(%{"map" => "image.png"})]
       b = [Op.delete(1)]
       expected = [Op.delete(1)]
 

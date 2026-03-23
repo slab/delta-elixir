@@ -242,6 +242,19 @@ defmodule Delta.Op do
   @spec get_embed_data!(map, map) :: {any, any, any}
   def get_embed_data!(a, b) do
     cond do
+      a == "\n" and is_map(b) and map_size(b) == 1 ->
+        [type] = Map.keys(b)
+
+        empty =
+          case b[type] do
+            %{} -> %{}
+            value when is_list(value) -> []
+            "" <> _ -> ""
+            _ -> nil
+          end
+
+        {type, empty, b[type]}
+
       not is_map(a) ->
         raise("cannot retain #{inspect(a)}")
 
