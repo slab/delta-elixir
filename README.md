@@ -219,12 +219,12 @@ base |> Delta.compose(change) |> Delta.compose(inverted) == base
 
 <br>
 
-[badge-github]: https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg
+[badge-github]: https://github.com/slab/delta-elixir/actions/workflows/ci.yaml/badge.svg
 [badge-version]: https://img.shields.io/hexpm/v/delta.svg
 [badge-license]: https://img.shields.io/hexpm/l/delta.svg
 [badge-downloads]: https://img.shields.io/hexpm/dt/delta.svg
 [hexpm]: https://hex.pm/packages/delta
-[github-build]: https://github.com/slab/delta-elixir/actions/workflows/ci.yml
+[github-build]: https://github.com/slab/delta-elixir/actions/workflows/ci.yaml
 [github-license]: https://github.com/slab/delta-elixir/blob/master/LICENSE
 [github-fork]: https://github.com/slab/delta-elixir/fork
 [docs]: https://hexdocs.pm/delta
