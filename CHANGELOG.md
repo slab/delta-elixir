@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-- Support retaining placeholder text with an embed retain in `Delta.compose/2` (https://github.com/slab/delta-elixir/commit/1ac46dd053c92fa4fce5fdaa1a85a0e616770d27)
+- Support retaining placeholder text with an embed retain in `Delta.compose/2` ([1ac46dd](https://github.com/slab/delta-elixir/commit/1ac46dd053c92fa4fce5fdaa1a85a0e616770d27))
 
 ## v0.4.1 (2024-11-28)
 
