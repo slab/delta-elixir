@@ -1,43 +1,35 @@
 defmodule Delta.MixProject do
   use Mix.Project
 
-
-  @app     :delta
-  @name    "Delta"
+  @app :delta
+  @name "Delta"
   @version "0.4.1"
-  @github  "https://github.com/slab/delta-elixir"
-
+  @github "https://github.com/slab/delta-elixir"
 
   def project do
     [
-      # Project
-      app:            @app,
-      version:        @version,
-      elixir:         "~> 1.13",
-      description:    description(),
-      package:        package(),
-      deps:           deps(),
-      elixirc_paths:  elixirc_paths(Mix.env()),
-
-      # ExDoc
-      name:           @name,
+      app: @app,
+      version: @version,
+      elixir: "~> 1.18",
+      description: description(),
+      package: package(),
+      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
+      name: @name,
       docs: [
-        main:         @name,
-        source_url:   @github,
+        main: @name,
+        source_url: @github,
         homepage_url: @github,
-        canonical:    "https://hexdocs.pm/#{@app}",
-        extras:       ["README.md", "CHANGELOG.md"]
+        canonical: "https://hexdocs.pm/#{@app}",
+        extras: ["README.md", "CHANGELOG.md"]
       ]
     ]
   end
-
 
   defp description do
     "Simple, yet expressive format to describe contents and changes"
   end
 
-
-  # BEAM Application
   def application do
     [
       env: [custom_embeds: []],
@@ -45,8 +37,6 @@ defmodule Delta.MixProject do
     ]
   end
 
-
-  # Dependencies
   defp deps do
     [
       {:diff_match_patch, "~> 0.2"},
@@ -55,14 +45,10 @@ defmodule Delta.MixProject do
     ]
   end
 
-
-  # Compilation Paths
-  defp elixirc_paths(:dev),  do: elixirc_paths(:test)
+  defp elixirc_paths(:dev), do: elixirc_paths(:test)
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_),     do: ["lib"]
+  defp elixirc_paths(_), do: ["lib"]
 
-
-  # Package Information
   defp package do
     [
       name: @app,
@@ -71,7 +57,7 @@ defmodule Delta.MixProject do
       files: ~w(mix.exs lib README.md CHANGELOG.md),
       links: %{
         "Github" => @github,
-        "Delta.js" => "https://github.com/quilljs/delta",
+        "Delta.js" => "https://github.com/slab/delta",
         "Changelog" => "https://hexdocs.pm/delta/changelog.html"
       }
     ]
